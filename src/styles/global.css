@@ -1,0 +1,146 @@
+/* ==============================
+   OBSCURA — Global Styles
+   Museum-grade dark aesthetic
+   ============================== */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --black: #080808;
+  --deep: #0d0d0d;
+  --surface: #111111;
+  --surface-2: #161616;
+  --surface-3: #1e1e1e;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-hover: rgba(255, 255, 255, 0.18);
+  --white: #f5f0eb;
+  --white-dim: rgba(245, 240, 235, 0.6);
+  --white-faint: rgba(245, 240, 235, 0.25);
+  --gold: #c9a96e;
+  --gold-dim: rgba(201, 169, 110, 0.4);
+
+  --font-serif: 'Cormorant Garamond', Georgia, serif;
+  --font-sans: 'Helvetica Neue', 'Helvetica', Arial, sans-serif;
+  --font-mono: 'DM Mono', monospace;
+
+  --nav-height: 72px;
+  --transition: 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --transition-fast: 0.2s ease;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+}
+
+body {
+  background-color: var(--black);
+  color: var(--white);
+  font-family: var(--font-sans);
+  font-weight: 300;
+  line-height: 1.6;
+  overflow-x: hidden;
+  cursor: none;
+}
+
+/* ---- Custom Cursor ---- */
+.cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 10px;
+  height: 10px;
+  background: var(--white);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  transition: transform 0.15s ease, width 0.3s ease, height 0.3s ease, opacity 0.3s ease;
+  mix-blend-mode: difference;
+}
+
+.cursor-ring {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(245, 240, 235, 0.5);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9998;
+  transform: translate(-50%, -50%);
+  transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              width 0.3s ease, height 0.3s ease, opacity 0.3s ease;
+}
+
+.cursor.is-hovering {
+  width: 6px;
+  height: 6px;
+  opacity: 0.5;
+}
+
+.cursor-ring.is-hovering {
+  width: 56px;
+  height: 56px;
+  border-color: var(--gold);
+  opacity: 0.7;
+}
+
+/* ---- Selection ---- */
+::selection {
+  background: var(--gold);
+  color: var(--black);
+}
+
+/* ---- Scrollbar ---- */
+::-webkit-scrollbar {
+  width: 2px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--black);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-hover);
+}
+
+/* ---- Typography Utilities ---- */
+.font-serif { font-family: var(--font-serif); }
+.font-sans  { font-family: var(--font-sans); }
+.font-mono  { font-family: var(--font-mono); }
+
+.text-gold  { color: var(--gold); }
+.text-dim   { color: var(--white-dim); }
+.text-faint { color: var(--white-faint); }
+
+/* ---- Layout ---- */
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 48px;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0 24px;
+  }
+}
+
+/* ---- Divider ---- */
+.divider {
+  width: 100%;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ---- Page transition wrapper ---- */
+.page {
+  min-height: 100vh;
+  padding-top: var(--nav-height);
+}
