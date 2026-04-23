@@ -1,62 +1,176 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import styles from './Gallery.module.css'
 import { collections, categories } from '../data/collections'
 import Lightbox from '../components/Lightbox'
 
-const FRAME_HEIGHTS = [460, 520, 440, 580, 480, 500]
-const FRAME_WIDTHS  = [320, 360, 300, 380, 340, 360]
-const OFFSETS_Y     = [0, 22, -16, 12, -22, 6]
+const FRAME_HEIGHTS = [460, 530, 450, 570, 490, 510]
+const FRAME_WIDTHS  = [320, 370, 305, 385, 345, 360]
+const OFFSETS_Y     = [0, 24, -18, 14, -24, 8]
 
 export default function Gallery() {
   const [activeCategory, setActiveCategory] = useState('All')
-  const [lightbox, setLightbox] = useState(null)
-  const [hoveredId, setHoveredId] = useState(null)
+  const [lightbox, setLightbox]             = useState(null)
+  const [hoveredId, setHoveredId]           = useState(null)
   const [scrollProgress, setScrollProgress] = useState(0)
-  const trackRef = useRef(null)
+  const [zoomLevel, setZoomLevel]           = useState(0)
+
+  const trackRef     = useRef(null)
+  const scrollX      = useRef(0)
+  const targetX      = useRef(0)
+  const rafId        = useRef(null)
+  const isDragging   = useRef(false)
+  const dragStartX   = useRef(0)
+  const dragScrollX  = useRef(0)
+  const zoomLevelRef = useRef(0)
+  const zoomAction   = useRef(0)
+  const zoomRaf      = useRef(null)
+
+  const setZoom = useCallback((value) => {
+    zoomLevelRef.current = value
+    setZoomLevel(value)
+  }, [])
+
+  const animateZoom = useCallback(() => {
+    const dir = zoomAction.current
+    if (!dir) {
+      zoomRaf.current = null
+      return
+    }
+    const next = Math.max(0, Math.min(1, zoomLevelRef.current + dir * 0.028))
+    if (next === zoomLevelRef.current) {
+      zoomAction.current = 0
+      zoomRaf.current = null
+      return
+    }
+    setZoom(next)
+    zoomRaf.current = requestAnimationFrame(animateZoom)
+  }, [setZoom])
+
+  const startZoom = useCallback((dir) => {
+    if (zoomAction.current === dir) return
+    zoomAction.current = dir
+    if (!zoomRaf.current) zoomRaf.current = requestAnimationFrame(animateZoom)
+  }, [animateZoom])
+
+  const stopZoom = useCallback(() => {
+    zoomAction.current = 0
+    if (zoomRaf.current) {
+      cancelAnimationFrame(zoomRaf.current)
+      zoomRaf.current = null
+    }
+  }, [])
 
   const filtered = activeCategory === 'All'
     ? collections
     : collections.filter(c => c.category === activeCategory)
+
+  const tick = useCallback(() => {
+    const track = trackRef.current
+    if (!track) return
+    const diff = targetX.current - scrollX.current
+    scrollX.current += diff * 0.08
+    track.scrollLeft = scrollX.current
+    const max = track.scrollWidth - track.clientWidth
+    setScrollProgress(max > 0 ? scrollX.current / max : 0)
+    if (Math.abs(diff) > 0.5) {
+      rafId.current = requestAnimationFrame(tick)
+    } else {
+      scrollX.current = targetX.current
+    }
+  }, [])
+
+  const animateTo = useCallback((x) => {
+    const track = trackRef.current
+    if (!track) return
+    const max = track.scrollWidth - track.clientWidth
+    targetX.current = Math.max(0, Math.min(x, max))
+    if (rafId.current) cancelAnimationFrame(rafId.current)
+    rafId.current = requestAnimationFrame(tick)
+  }, [tick])
 
   useEffect(() => {
     const track = trackRef.current
     if (!track) return
     const onWheel = (e) => {
       e.preventDefault()
-      track.scrollLeft += e.deltaY * 1.5
-    }
-    const onScroll = () => {
-      const max = track.scrollWidth - track.clientWidth
-      setScrollProgress(max > 0 ? track.scrollLeft / max : 0)
+      targetX.current = targetX.current + e.deltaY * 1.6
+      if (rafId.current) cancelAnimationFrame(rafId.current)
+      rafId.current = requestAnimationFrame(tick)
     }
     track.addEventListener('wheel', onWheel, { passive: false })
-    track.addEventListener('scroll', onScroll, { passive: true })
+    return () => track.removeEventListener('wheel', onWheel)
+  }, [tick, filtered])
+
+  useEffect(() => {
+    const track = trackRef.current
+    if (!track) return
+    const onDown = (e) => {
+      isDragging.current  = true
+      dragStartX.current  = e.clientX
+      dragScrollX.current = targetX.current
+      if (rafId.current) cancelAnimationFrame(rafId.current)
+    }
+    const onMove = (e) => {
+      if (!isDragging.current) return
+      const delta = dragStartX.current - e.clientX
+      targetX.current = dragScrollX.current + delta
+      scrollX.current = targetX.current
+      track.scrollLeft = scrollX.current
+      const max = track.scrollWidth - track.clientWidth
+      setScrollProgress(max > 0 ? scrollX.current / max : 0)
+    }
+    const onUp = () => { isDragging.current = false }
+    track.addEventListener('mousedown', onDown)
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
     return () => {
-      track.removeEventListener('wheel', onWheel)
-      track.removeEventListener('scroll', onScroll)
+      track.removeEventListener('mousedown', onDown)
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
     }
   }, [filtered])
 
   useEffect(() => {
-    const onKey = (e) => {
-      if (!trackRef.current) return
-      if (e.key === 'ArrowRight') trackRef.current.scrollLeft += 340
-      if (e.key === 'ArrowLeft')  trackRef.current.scrollLeft -= 340
+    const onKeyDown = (e) => {
+      if (e.key === 'ArrowRight') animateTo(targetX.current + 380)
+      if (e.key === 'ArrowLeft')  animateTo(targetX.current - 380)
+      if (e.key === 'ArrowDown')  { e.preventDefault(); startZoom(1) }
+      if (e.key === 'ArrowUp')    { e.preventDefault(); startZoom(-1) }
     }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
+
+    const onKeyUp = (e) => {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') stopZoom()
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    window.addEventListener('keyup', onKeyUp)
+    return () => {
+      window.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('keyup', onKeyUp)
+    }
+  }, [animateTo, startZoom, stopZoom])
 
   const resetAndFilter = (cat) => {
     setActiveCategory(cat)
+    targetX.current = 0
+    scrollX.current = 0
     if (trackRef.current) trackRef.current.scrollLeft = 0
     setScrollProgress(0)
   }
 
+  useEffect(() => () => {
+    if (rafId.current) cancelAnimationFrame(rafId.current)
+    if (zoomRaf.current) cancelAnimationFrame(zoomRaf.current)
+  }, [])
+
+  const zoomed = zoomLevel > 0.6
+  const trackInnerStyle = {
+    transform: `scale(${1 - zoomLevel * 0.62}) translateY(${zoomLevel * 8}%)`,
+    opacity: 1 - zoomLevel * 0.18,
+  }
+
   return (
     <main className={styles.page}>
-
-      {/* Top header bar */}
       <header className={styles.topBar}>
         <div className={styles.topLeft}>
           <div className={styles.eyebrow}>
@@ -70,16 +184,13 @@ export default function Gallery() {
             <svg width="14" height="10" viewBox="0 0 14 10" fill="none" style={{display:'inline',verticalAlign:'middle',marginRight:'6px'}}>
               <path d="M1 5H13M9 1L13 5L9 9" stroke="currentColor" strokeWidth="0.8" strokeLinecap="round"/>
             </svg>
-            Scroll or use ← → keys to walk through the gallery
+            Scroll · Drag · Arrow keys · ↓ overview · ↑ focus
           </p>
           <div className={styles.filters}>
             {categories.map(cat => (
-              <button
-                key={cat}
+              <button key={cat}
                 className={`${styles.filterBtn} ${activeCategory === cat ? styles.filterActive : ''}`}
-                onClick={() => resetAndFilter(cat)}
-                data-hover
-              >
+                onClick={() => resetAndFilter(cat)} data-hover>
                 {cat}
               </button>
             ))}
@@ -87,25 +198,28 @@ export default function Gallery() {
         </div>
       </header>
 
-      {/* Museum wall */}
       <div className={styles.museum}>
         <div className={styles.ceilingRail} />
 
+        <button className={`${styles.zoomBtn} ${zoomed ? styles.zoomActive : ''}`}
+          onClick={() => setZoom(zoomed ? 0 : 1)} data-hover>
+          {zoomed
+            ? <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6H10M6 2V10" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/></svg>
+            : <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6H10" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/></svg>
+          }
+        </button>
+
         <div className={styles.track} ref={trackRef} key={activeCategory}>
-          <div className={styles.trackInner}>
+          <div className={styles.trackInner} style={trackInnerStyle}>
             <div className={styles.spacer} />
-
             {filtered.map((col, i) => (
-              <MuseumFrame
-                key={col.id}
-                collection={col}
-                index={i}
-                isHovered={hoveredId === col.id}
-                onHover={setHoveredId}
+              <MuseumFrame key={col.id} collection={col} index={i}
+                isHovered={hoveredId === col.id && !zoomed}
+                onHover={(id) => !zoomed && setHoveredId(id)}
                 onClick={() => setLightbox({ collection: col, startIndex: 0 })}
-              />
+                zoomLevel={zoomLevel}
+                zoomed={zoomed} />
             ))}
-
             <div className={styles.spacer} />
           </div>
         </div>
@@ -113,7 +227,6 @@ export default function Gallery() {
         <div className={styles.floor} />
       </div>
 
-      {/* Progress + bottom bar */}
       <div className={styles.progressWrap}>
         <div className={styles.progressBar}>
           <div className={styles.progressFill} style={{ width: `${scrollProgress * 100}%` }} />
@@ -128,68 +241,50 @@ export default function Gallery() {
       </div>
 
       {lightbox && (
-        <Lightbox
-          collection={lightbox.collection}
-          startIndex={lightbox.startIndex}
-          onClose={() => setLightbox(null)}
-        />
+        <Lightbox collection={lightbox.collection} startIndex={lightbox.startIndex}
+          onClose={() => setLightbox(null)} />
       )}
     </main>
   )
 }
 
-function MuseumFrame({ collection, index, isHovered, onHover, onClick }) {
+function MuseumFrame({ collection, index, isHovered, onHover, onClick, zoomLevel, zoomed }) {
   const [loaded, setLoaded] = useState(false)
-  const h = FRAME_HEIGHTS[index % FRAME_HEIGHTS.length]
-  const w = FRAME_WIDTHS[index % FRAME_WIDTHS.length]
+  const h  = FRAME_HEIGHTS[index % FRAME_HEIGHTS.length]
+  const w  = FRAME_WIDTHS[index % FRAME_WIDTHS.length]
   const oy = OFFSETS_Y[index % OFFSETS_Y.length]
 
   return (
-    <div
-      className={styles.frameWrap}
-      style={{ '--oy': `${oy}px`, width: `${w + 80}px` }}
+    <div className={styles.frameWrap}
+      style={{ '--oy': `${oy}px`, width: `${w + 80}px`, margin: `0 ${4 + 28 * (1 - zoomLevel)}px` }}
       onMouseEnter={() => onHover(collection.id)}
       onMouseLeave={() => onHover(null)}
-      onClick={onClick}
-      data-hover
-    >
-      {/* Spotlight assembly hanging from rail */}
+      onClick={onClick} data-hover>
+
       <div className={styles.spotlight}>
         <div className={styles.spWire} />
         <div className={`${styles.spHead} ${isHovered ? styles.spHeadOn : ''}`}>
-          <div className={styles.spLens} />
+          <div className={`${styles.spLens} ${isHovered ? styles.spLensOn : ''}`} />
           <div className={styles.spRim} />
         </div>
-        <div className={`${styles.spBeam} ${isHovered ? styles.spBeamOn : ''}`} />
       </div>
 
-      {/* Frame */}
-      <div
-        className={`${styles.frame} ${isHovered ? styles.frameOn : ''}`}
-        style={{ width: w, height: h }}
-      >
-        {/* Gold frame border */}
+      <div className={`${styles.lightCone} ${isHovered ? styles.lightConeOn : ''}`} />
+      <div className={`${styles.wallPool} ${isHovered ? styles.wallPoolOn : ''}`} />
+
+      <div className={`${styles.frame} ${isHovered ? styles.frameOn : ''}`} style={{ width: w, height: h }}>
         <div className={styles.frameBorder}>
-          {/* White matte mount */}
           <div className={styles.matte}>
             <div className={styles.photoWrap}>
               {!loaded && <div className={styles.skeleton} />}
-              <img
-                src={collection.coverImage}
-                alt={collection.title}
+              <img src={collection.coverImage} alt={collection.title}
                 className={`${styles.photo} ${loaded ? styles.photoLoaded : ''}`}
-                onLoad={() => setLoaded(true)}
-                draggable={false}
-              />
+                onLoad={() => setLoaded(true)} draggable={false} />
             </div>
           </div>
         </div>
-
-        {/* Ambient glow cast on wall by spotlight */}
-        <div className={`${styles.wallGlow} ${isHovered ? styles.wallGlowOn : ''}`} />
       </div>
 
-      {/* Museum label plate */}
       <div className={`${styles.plate} ${isHovered ? styles.plateOn : ''}`}>
         <div className={styles.plateLine} />
         <span className={styles.plateTitle}>{collection.title}</span>

@@ -1,6 +1,6 @@
 /* ============================================================
-   GALLERY — Museum Wall Layout
-   Horizontal scroll, framed prints, spotlight per frame
+   GALLERY — Museum Wall
+   Momentum scroll · Spotlight wall glow · Zoom in/out
    ============================================================ */
 
 .page {
@@ -9,21 +9,19 @@
   flex-direction: column;
   overflow: hidden;
   padding-top: var(--nav-height);
-  background: var(--black);
+  background: #0a0908;
 }
 
-/* ---- Top bar ---- */
+/* ── Top bar ── */
 .topBar {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  padding: 28px 48px 20px;
+  padding: 24px 48px 18px;
   flex-shrink: 0;
   border-bottom: 1px solid var(--border);
-  z-index: 2;
+  z-index: 10;
 }
-
-.topLeft {}
 
 .eyebrow {
   display: flex;
@@ -46,7 +44,7 @@
 
 .title {
   font-family: var(--font-serif);
-  font-size: clamp(32px, 4vw, 52px);
+  font-size: clamp(30px, 3.5vw, 48px);
   font-weight: 300;
   color: var(--white);
   line-height: 1;
@@ -56,13 +54,13 @@
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 12px;
+  gap: 10px;
 }
 
 .hint {
   font-family: var(--font-mono);
   font-size: 10px;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   color: var(--white-faint);
   text-transform: uppercase;
 }
@@ -87,41 +85,54 @@
   transition: color 0.2s, border-color 0.2s;
 }
 
-.filterBtn:hover {
-  color: var(--white);
-  border-color: var(--border);
-}
+.filterBtn:hover { color: var(--white); border-color: var(--border); }
+.filterActive    { color: var(--gold) !important; border-color: var(--gold-dim) !important; }
 
-.filterActive {
-  color: var(--gold) !important;
-  border-color: var(--gold-dim) !important;
-}
-
-/* ---- Museum wall ---- */
+/* ── Museum wall container ── */
 .museum {
   flex: 1;
   display: flex;
   flex-direction: column;
   position: relative;
   overflow: hidden;
-  /* Dark wall texture via subtle gradient */
+  /* Subtle warm wall gradient — like a real gallery with ambient bounce */
   background:
-    radial-gradient(ellipse 60% 50% at 50% 100%, rgba(30,20,10,0.4) 0%, transparent 70%),
-    #0a0908;
+    radial-gradient(ellipse 100% 60% at 50% 110%, rgba(40,28,12,0.55) 0%, transparent 65%),
+    #0e0c0a;
 }
 
-/* Ceiling rail — the track the spotlights hang from */
+/* Ceiling rail */
 .ceilingRail {
-  height: 10px;
-  background: linear-gradient(to bottom, #2a2520 0%, #1a1510 60%, #0f0c09 100%);
-  border-bottom: 1px solid rgba(201,169,110,0.15);
+  height: 11px;
+  background: linear-gradient(to bottom, #2e2820 0%, #1c1810 60%, #0e0b08 100%);
+  border-bottom: 1px solid rgba(201,169,110,0.18);
   flex-shrink: 0;
-  position: relative;
   z-index: 3;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.8);
+  box-shadow: 0 6px 32px rgba(0,0,0,0.9);
 }
 
-/* Horizontal scroll track */
+/* Zoom toggle button */
+.zoomBtn {
+  position: absolute;
+  right: 48px;
+  top: 20px;
+  z-index: 10;
+  width: 32px;
+  height: 32px;
+  background: rgba(14,12,10,0.85);
+  border: 1px solid var(--border-hover);
+  color: var(--white-faint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: none;
+  transition: border-color 0.25s, color 0.25s, background 0.25s;
+}
+
+.zoomBtn:hover  { border-color: var(--gold-dim); color: var(--gold); }
+.zoomActive     { border-color: var(--gold-dim) !important; color: var(--gold) !important; }
+
+/* ── Horizontal scroll track ── */
 .track {
   flex: 1;
   overflow-x: auto;
@@ -129,46 +140,68 @@
   scrollbar-width: none;
   -ms-overflow-style: none;
   cursor: grab;
+  /* Smooth transition for zoom */
+  transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.track:active { cursor: grabbing; }
+.track:active     { cursor: grabbing; }
 .track::-webkit-scrollbar { display: none; }
+
+/* Zoom-out state: scale the whole track down so all frames visible */
+.trackZoomed {
+  overflow-x: hidden;
+}
 
 .trackInner {
   display: flex;
   align-items: center;
   height: 100%;
   min-width: max-content;
-  padding-bottom: 60px; /* room for label plates */
+  padding-bottom: 72px;
+  transform-origin: center center;
+  transition: opacity 0.2s ease, gap 0.6s ease;
 }
 
-.spacer {
-  width: 80px;
-  flex-shrink: 0;
+.trackInnerZoomed {
+  transform: scale(0.38) translateY(8%);
+  gap: 0;
+  padding-bottom: 0;
+  min-width: unset;
+  flex-wrap: nowrap;
+  justify-content: center;
+  width: 100%;
 }
 
-/* Floor line */
+/* ── Floor ── */
 .floor {
   height: 3px;
-  background: linear-gradient(to right, transparent, rgba(201,169,110,0.08) 20%, rgba(201,169,110,0.08) 80%, transparent);
+  background: linear-gradient(to right, transparent, rgba(201,169,110,0.07) 20%, rgba(201,169,110,0.07) 80%, transparent);
   flex-shrink: 0;
 }
 
-/* ---- Each frame unit ---- */
+/* ── Frame wrapper (one per artwork) ── */
 .frameWrap {
   display: flex;
   flex-direction: column;
   align-items: center;
   flex-shrink: 0;
-  margin: 0 28px;
+  margin: 0 32px;
   position: relative;
   transform: translateY(var(--oy, 0px));
   cursor: none;
-  /* Extra top space for the spotlight assembly */
-  padding-top: 64px;
+  /* Top padding = space for fixture + cone above frame */
+  padding-top: 72px;
+  transition: transform 0.6s cubic-bezier(0.25,0.46,0.45,0.94);
 }
 
-/* ---- Spotlight assembly ---- */
+.frameWrapZoomed {
+  margin: 0 4px;
+  transform: none !important;
+}
+
+.spacer { width: 80px; flex-shrink: 0; }
+
+/* ── Spotlight fixture ── */
 .spotlight {
   position: absolute;
   top: 0;
@@ -183,124 +216,175 @@
 
 .spWire {
   width: 1px;
-  height: 28px;
-  background: linear-gradient(to bottom, rgba(201,169,110,0.4), rgba(201,169,110,0.15));
+  height: 30px;
+  background: linear-gradient(to bottom, rgba(180,150,80,0.5), rgba(180,150,80,0.12));
 }
 
 .spHead {
-  width: 28px;
-  height: 18px;
-  background: #1e1a14;
-  border: 1px solid rgba(201,169,110,0.2);
-  border-radius: 4px 4px 8px 8px;
+  width: 30px;
+  height: 20px;
+  background: #1c1814;
+  border: 1px solid rgba(180,150,80,0.18);
+  border-radius: 3px 3px 9px 9px;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  transition: background 0.5s ease, border-color 0.5s ease;
+  transition: background 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
 }
 
 .spHeadOn {
-  background: #2d2518;
-  border-color: rgba(201,169,110,0.55);
+  background: #2a2016;
+  border-color: rgba(201,169,110,0.5);
+  box-shadow: 0 0 10px rgba(201,169,110,0.12);
 }
 
 .spLens {
-  width: 10px;
-  height: 10px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
-  background: #111;
-  border: 1px solid rgba(201,169,110,0.2);
+  background: #0e0c0a;
+  border: 1px solid rgba(180,150,80,0.18);
   transition: background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
 }
 
-.spHeadOn .spLens {
-  background: radial-gradient(circle, #ffe4a0 0%, #d4a84b 50%, #8a6820 100%);
-  border-color: rgba(255,220,120,0.7);
-  box-shadow: 0 0 6px 2px rgba(255,200,80,0.6), 0 0 12px 4px rgba(201,169,110,0.3);
+.spLensOn {
+  background: radial-gradient(circle at 38% 35%, #fff9e0 0%, #f5d060 30%, #c89030 65%, #7a5010 100%);
+  border-color: rgba(255,230,120,0.8);
+  box-shadow:
+    0 0 4px 2px rgba(255,210,80,0.7),
+    0 0 12px 5px rgba(201,169,110,0.4),
+    0 0 24px 8px rgba(180,130,40,0.15);
 }
 
 .spRim {
   position: absolute;
-  bottom: -2px;
+  bottom: -3px;
   left: 50%;
   transform: translateX(-50%);
-  width: 16px;
-  height: 3px;
-  background: #2a2418;
-  border-radius: 0 0 3px 3px;
+  width: 18px;
+  height: 4px;
+  background: #242018;
+  border-radius: 0 0 4px 4px;
 }
 
-/* Cone of light projected downward */
-.spBeam {
+/* ── Light cone: triangle via clip-path ── */
+.lightCone {
+  position: absolute;
+  /* Positioned just below the spotlight head */
+  top: 48px;
+  left: 50%;
+  transform: translateX(-50%);
   width: 0;
   height: 0;
-  border-left: 0px solid transparent;
-  border-right: 0px solid transparent;
-  border-top: 0px solid transparent;
-  opacity: 0;
-  transition: opacity 0.6s ease, border-left-width 0.6s ease,
-              border-right-width 0.6s ease, border-top-width 0.6s ease;
   pointer-events: none;
+  z-index: 1;
+  opacity: 0.16;
+  transition: opacity 0.35s ease, width 0.6s ease, height 0.6s ease;
 }
 
-.spBeamOn {
-  border-left: 60px solid transparent;
-  border-right: 60px solid transparent;
-  border-top: 260px solid rgba(255, 210, 100, 0.045);
+.lightConeOn {
+  /* Realistic cone of warm light */
+  width: 320px;
+  height: 480px;
+  opacity: 1;
+  background: radial-gradient(
+    ellipse 70% 100% at 50% 0%,
+    rgba(255, 220, 120, 0.10) 0%,
+    rgba(220, 170, 60, 0.05) 40%,
+    transparent 80%
+  );
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+}
+
+/* ── Wall pool: the key reference effect ──
+   A soft oval of warm light on the wall surface,
+   like the photo in SC1 — bleeds around the frame edges */
+.wallPool {
+  position: absolute;
+  /* Sits behind the frame, centred on it */
+  top: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 520px;
+  height: 840px;
+  pointer-events: none;
+  z-index: 0;
+  border-radius: 50%;
+  opacity: 0.55;
+  transition: opacity 0.45s ease;
+  background: radial-gradient(
+    ellipse 70% 65% at 50% 38%,
+    rgba(255, 250, 235, 0.38) 0%,
+    rgba(255, 235, 180, 0.22) 22%,
+    rgba(245, 190, 90, 0.14) 40%,
+    rgba(220, 155, 60, 0.08) 55%,
+    transparent 75%
+  );
+}
+
+.wallPoolOn {
   opacity: 1;
 }
 
-/* ---- The picture frame ---- */
+/* ── Picture frame ── */
 .frame {
   position: relative;
   flex-shrink: 0;
-  transition: transform 0.5s cubic-bezier(0.25,0.46,0.45,0.94);
+  z-index: 2;
+  transition: transform 0.55s cubic-bezier(0.25,0.46,0.45,0.94),
+              box-shadow 0.55s ease;
 }
 
 .frameOn {
-  transform: translateY(-6px);
+  transform: translateY(-7px);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.7), 0 4px 12px rgba(0,0,0,0.5);
 }
 
-/* Outer ornate gold frame border */
+/* Gold ornate frame border */
 .frameBorder {
   width: 100%;
   height: 100%;
-  padding: 12px;
-  background:
-    linear-gradient(135deg, #8a7040 0%, #c9a96e 25%, #e8c97e 40%, #b89050 55%, #c9a96e 70%, #8a7040 100%);
+  padding: 10px;
+  background: linear-gradient(
+    145deg,
+    #7a6030 0%,
+    #c9a96e 20%,
+    #e8cc80 35%,
+    #b89050 52%,
+    #c9a96e 68%,
+    #7a6030 100%
+  );
   box-shadow:
-    inset 0 0 0 1px rgba(255,240,180,0.3),
-    inset 0 0 0 3px rgba(80,55,20,0.5),
-    0 8px 40px rgba(0,0,0,0.7),
-    0 2px 8px rgba(0,0,0,0.5);
+    inset 0 0 0 1px rgba(255,245,190,0.25),
+    inset 0 0 0 3px rgba(70,48,14,0.55),
+    0 10px 48px rgba(0,0,0,0.75),
+    0 3px 10px rgba(0,0,0,0.6);
   position: relative;
 }
 
-/* Inner bevel on frame */
 .frameBorder::before {
   content: '';
   position: absolute;
-  inset: 4px;
-  border: 1px solid rgba(80,55,20,0.6);
+  inset: 3px;
+  border: 1px solid rgba(60,42,10,0.6);
   pointer-events: none;
 }
 
 .frameBorder::after {
   content: '';
   position: absolute;
-  inset: 6px;
-  border: 1px solid rgba(255,240,180,0.15);
+  inset: 5px;
+  border: 1px solid rgba(255,240,180,0.12);
   pointer-events: none;
 }
 
-/* White/cream matte mount inside frame */
+/* White/cream matte mount */
 .matte {
   width: 100%;
   height: 100%;
-  background: #f0ece4;
-  padding: 16px;
-  position: relative;
+  background: #ede9e0;
+  padding: 14px;
 }
 
 .photoWrap {
@@ -314,7 +398,7 @@
 .skeleton {
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, #1a1a1a 25%, #242424 50%, #1a1a1a 75%);
+  background: linear-gradient(90deg, #181818 25%, #222 50%, #181818 75%);
   background-size: 200% 100%;
   animation: shimmer 1.8s infinite;
 }
@@ -331,47 +415,29 @@
   display: block;
   opacity: 0;
   transition: opacity 0.5s ease, transform 0.7s cubic-bezier(0.25,0.46,0.45,0.94);
+  user-select: none;
 }
 
 .photoLoaded { opacity: 1; }
+.frame:hover .photo { transform: scale(1.03); }
 
-.frame:hover .photo {
-  transform: scale(1.04);
-}
-
-/* Ambient warm glow on wall around frame when lit */
-.wallGlow {
-  position: absolute;
-  inset: -40px;
-  background: radial-gradient(ellipse 80% 70% at 50% 50%, rgba(201,169,110,0.0) 0%, transparent 70%);
-  pointer-events: none;
-  transition: background 0.6s ease;
-  z-index: -1;
-}
-
-.wallGlowOn {
-  background: radial-gradient(ellipse 80% 70% at 50% 50%, rgba(201,169,110,0.06) 0%, transparent 70%);
-}
-
-/* ---- Label plate ---- */
+/* ── Label plate ── */
 .plate {
-  margin-top: 18px;
+  margin-top: 16px;
   text-align: center;
-  opacity: 0.3;
-  transform: translateY(4px);
-  transition: opacity 0.4s ease, transform 0.4s ease;
+  z-index: 2;
+  opacity: 0.25;
+  transform: translateY(6px);
+  transition: opacity 0.45s ease, transform 0.45s ease;
 }
 
-.plateOn {
-  opacity: 1;
-  transform: translateY(0);
-}
+.plateOn { opacity: 1; transform: translateY(0); }
 
 .plateLine {
-  width: 24px;
+  width: 22px;
   height: 1px;
   background: var(--gold-dim);
-  margin: 0 auto 10px;
+  margin: 0 auto 9px;
 }
 
 .plateTitle {
@@ -402,16 +468,16 @@
   text-transform: uppercase;
 }
 
-/* ---- Progress & bottom bar ---- */
+/* ── Progress bar ── */
 .progressWrap {
   flex-shrink: 0;
-  padding: 0 48px 16px;
+  padding: 0 48px 14px;
 }
 
 .progressBar {
   height: 1px;
   background: var(--border);
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   position: relative;
 }
 
@@ -420,14 +486,13 @@
   left: 0;
   top: 0;
   height: 1px;
-  background: var(--gold);
-  transition: width 0.1s linear;
+  background: linear-gradient(to right, var(--gold-dim), var(--gold));
+  transition: width 0.08s linear;
 }
 
 .bottomBar {
   display: flex;
   justify-content: space-between;
-  align-items: center;
 }
 
 .bottomCount {
@@ -445,17 +510,13 @@
   color: var(--gold);
 }
 
-/* ---- Responsive ---- */
+/* ── Responsive ── */
 @media (max-width: 768px) {
-  .topBar {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-    padding: 20px 24px 16px;
-  }
+  .topBar { flex-direction: column; align-items: flex-start; gap: 14px; padding: 18px 24px 14px; }
   .topRight { align-items: flex-start; }
   .filters { justify-content: flex-start; }
-  .progressWrap { padding: 0 24px 14px; }
-  .frameWrap { margin: 0 16px; padding-top: 52px; }
+  .progressWrap { padding: 0 24px 12px; }
+  .frameWrap { margin: 0 14px; }
   .spacer { width: 24px; }
+  .zoomBtn { right: 24px; }
 }
