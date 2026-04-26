@@ -1,0 +1,117 @@
+.wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 1.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.6s ease;
+  overflow: hidden;
+}
+
+.lightsup {
+  background: #0e0b08;
+}
+
+.out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Noise texture */
+.noise {
+  position: absolute;
+  inset: -50%;
+  width: 200%;
+  height: 200%;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
+/* Logo */
+.logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 1s ease, transform 1s ease;
+  z-index: 2;
+  position: relative;
+}
+
+.logoVisible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.logoLine {
+  width: 48px;
+  height: 1px;
+  background: rgba(201, 169, 110, 0.5);
+}
+
+.logoText {
+  font-family: 'DM Mono', monospace;
+  font-size: 22px;
+  letter-spacing: 0.55em;
+  color: #f5f0eb;
+  text-transform: uppercase;
+}
+
+.logoDot {
+  font-size: 7px;
+  color: #c9a96e;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+
+.logoSub {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+  font-size: 15px;
+  color: rgba(245, 240, 235, 0.35);
+  letter-spacing: 0.1em;
+}
+
+/* Spotlight beams */
+.beams {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.beam {
+  position: absolute;
+  top: 0;
+  left: calc(10% + var(--i) * 20%);
+  width: 0;
+  height: 0;
+  opacity: 0;
+  transition:
+    opacity 1s ease calc(var(--i) * 0.15s),
+    width 1s ease calc(var(--i) * 0.15s),
+    height 1s ease calc(var(--i) * 0.15s);
+}
+
+.beamsOn .beam {
+  width: 280px;
+  height: 100vh;
+  opacity: 1;
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 235, 150, 0.12) 0%,
+    rgba(220, 175, 70, 0.05) 40%,
+    transparent 80%
+  );
+  transform: translateX(-50%);
+}

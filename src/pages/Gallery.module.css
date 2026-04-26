@@ -1,6 +1,5 @@
 /* ============================================================
-   GALLERY — Museum Wall Layout
-   Horizontal scroll, framed prints, spotlight per frame
+   GALLERY — 3D Three.js Museum Wall
    ============================================================ */
 
 .page {
@@ -9,21 +8,20 @@
   flex-direction: column;
   overflow: hidden;
   padding-top: var(--nav-height);
-  background: var(--black);
+  background: #0e0b08;
 }
 
-/* ---- Top bar ---- */
+/* ── Top bar ── */
 .topBar {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  padding: 28px 48px 20px;
+  padding: 22px 48px 16px;
   flex-shrink: 0;
   border-bottom: 1px solid var(--border);
-  z-index: 2;
+  z-index: 10;
+  position: relative;
 }
-
-.topLeft {}
 
 .eyebrow {
   display: flex;
@@ -46,7 +44,7 @@
 
 .title {
   font-family: var(--font-serif);
-  font-size: clamp(32px, 4vw, 52px);
+  font-size: clamp(28px, 3.5vw, 46px);
   font-weight: 300;
   color: var(--white);
   line-height: 1;
@@ -56,13 +54,13 @@
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 12px;
+  gap: 10px;
 }
 
 .hint {
   font-family: var(--font-mono);
   font-size: 10px;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   color: var(--white-faint);
   text-transform: uppercase;
 }
@@ -87,347 +85,114 @@
   transition: color 0.2s, border-color 0.2s;
 }
 
-.filterBtn:hover {
-  color: var(--white);
-  border-color: var(--border);
-}
+.filterBtn:hover { color: var(--white); border-color: var(--border); }
+.filterActive    { color: var(--gold) !important; border-color: var(--gold-dim) !important; }
 
-.filterActive {
-  color: var(--gold) !important;
-  border-color: var(--gold-dim) !important;
-}
-
-/* ---- Museum wall ---- */
-.museum {
+/* ── Three.js canvas ── */
+.canvas {
   flex: 1;
-  display: flex;
-  flex-direction: column;
+  width: 100%;
   position: relative;
-  overflow: hidden;
-  /* Dark wall texture via subtle gradient */
-  background:
-    radial-gradient(ellipse 60% 50% at 50% 100%, rgba(30,20,10,0.4) 0%, transparent 70%),
-    #0a0908;
-}
-
-/* Ceiling rail — the track the spotlights hang from */
-.ceilingRail {
-  height: 10px;
-  background: linear-gradient(to bottom, #2a2520 0%, #1a1510 60%, #0f0c09 100%);
-  border-bottom: 1px solid rgba(201,169,110,0.15);
-  flex-shrink: 0;
-  position: relative;
-  z-index: 3;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.8);
-}
-
-/* Horizontal scroll track */
-.track {
-  flex: 1;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  cursor: grab;
-}
-
-.track:active { cursor: grabbing; }
-.track::-webkit-scrollbar { display: none; }
-
-.trackInner {
-  display: flex;
-  align-items: center;
-  height: 100%;
-  min-width: max-content;
-  padding-bottom: 60px; /* room for label plates */
-}
-
-.spacer {
-  width: 80px;
-  flex-shrink: 0;
-}
-
-/* Floor line */
-.floor {
-  height: 3px;
-  background: linear-gradient(to right, transparent, rgba(201,169,110,0.08) 20%, rgba(201,169,110,0.08) 80%, transparent);
-  flex-shrink: 0;
-}
-
-/* ---- Each frame unit ---- */
-.frameWrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex-shrink: 0;
-  margin: 0 28px;
-  position: relative;
-  transform: translateY(var(--oy, 0px));
   cursor: none;
-  /* Extra top space for the spotlight assembly */
-  padding-top: 64px;
+  overflow: hidden;
 }
 
-/* ---- Spotlight assembly ---- */
-.spotlight {
+.canvas canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* ── Hover label ── */
+.hoverLabel {
   position: absolute;
-  top: 0;
+  bottom: 80px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  z-index: 4;
+  gap: 4px;
   pointer-events: none;
+  animation: fadeUp 0.25s ease both;
+  z-index: 20;
 }
 
-.spWire {
-  width: 1px;
-  height: 28px;
-  background: linear-gradient(to bottom, rgba(201,169,110,0.4), rgba(201,169,110,0.15));
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
-.spHead {
-  width: 28px;
-  height: 18px;
-  background: #1e1a14;
-  border: 1px solid rgba(201,169,110,0.2);
-  border-radius: 4px 4px 8px 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  transition: background 0.5s ease, border-color 0.5s ease;
-}
-
-.spHeadOn {
-  background: #2d2518;
-  border-color: rgba(201,169,110,0.55);
-}
-
-.spLens {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #111;
-  border: 1px solid rgba(201,169,110,0.2);
-  transition: background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
-}
-
-.spHeadOn .spLens {
-  background: radial-gradient(circle, #ffe4a0 0%, #d4a84b 50%, #8a6820 100%);
-  border-color: rgba(255,220,120,0.7);
-  box-shadow: 0 0 6px 2px rgba(255,200,80,0.6), 0 0 12px 4px rgba(201,169,110,0.3);
-}
-
-.spRim {
-  position: absolute;
-  bottom: -2px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 16px;
-  height: 3px;
-  background: #2a2418;
-  border-radius: 0 0 3px 3px;
-}
-
-/* Cone of light projected downward */
-.spBeam {
-  width: 0;
-  height: 0;
-  border-left: 0px solid transparent;
-  border-right: 0px solid transparent;
-  border-top: 0px solid transparent;
-  opacity: 0;
-  transition: opacity 0.6s ease, border-left-width 0.6s ease,
-              border-right-width 0.6s ease, border-top-width 0.6s ease;
-  pointer-events: none;
-}
-
-.spBeamOn {
-  border-left: 60px solid transparent;
-  border-right: 60px solid transparent;
-  border-top: 260px solid rgba(255, 210, 100, 0.045);
-  opacity: 1;
-}
-
-/* ---- The picture frame ---- */
-.frame {
-  position: relative;
-  flex-shrink: 0;
-  transition: transform 0.5s cubic-bezier(0.25,0.46,0.45,0.94);
-}
-
-.frameOn {
-  transform: translateY(-6px);
-}
-
-/* Outer ornate gold frame border */
-.frameBorder {
-  width: 100%;
-  height: 100%;
-  padding: 12px;
-  background:
-    linear-gradient(135deg, #8a7040 0%, #c9a96e 25%, #e8c97e 40%, #b89050 55%, #c9a96e 70%, #8a7040 100%);
-  box-shadow:
-    inset 0 0 0 1px rgba(255,240,180,0.3),
-    inset 0 0 0 3px rgba(80,55,20,0.5),
-    0 8px 40px rgba(0,0,0,0.7),
-    0 2px 8px rgba(0,0,0,0.5);
-  position: relative;
-}
-
-/* Inner bevel on frame */
-.frameBorder::before {
-  content: '';
-  position: absolute;
-  inset: 4px;
-  border: 1px solid rgba(80,55,20,0.6);
-  pointer-events: none;
-}
-
-.frameBorder::after {
-  content: '';
-  position: absolute;
-  inset: 6px;
-  border: 1px solid rgba(255,240,180,0.15);
-  pointer-events: none;
-}
-
-/* White/cream matte mount inside frame */
-.matte {
-  width: 100%;
-  height: 100%;
-  background: #f0ece4;
-  padding: 16px;
-  position: relative;
-}
-
-.photoWrap {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  background: #111;
-  position: relative;
-}
-
-.skeleton {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, #1a1a1a 25%, #242424 50%, #1a1a1a 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.8s infinite;
-}
-
-@keyframes shimmer {
-  from { background-position: 200% 0; }
-  to   { background-position: -200% 0; }
-}
-
-.photo {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  opacity: 0;
-  transition: opacity 0.5s ease, transform 0.7s cubic-bezier(0.25,0.46,0.45,0.94);
-}
-
-.photoLoaded { opacity: 1; }
-
-.frame:hover .photo {
-  transform: scale(1.04);
-}
-
-/* Ambient warm glow on wall around frame when lit */
-.wallGlow {
-  position: absolute;
-  inset: -40px;
-  background: radial-gradient(ellipse 80% 70% at 50% 50%, rgba(201,169,110,0.0) 0%, transparent 70%);
-  pointer-events: none;
-  transition: background 0.6s ease;
-  z-index: -1;
-}
-
-.wallGlowOn {
-  background: radial-gradient(ellipse 80% 70% at 50% 50%, rgba(201,169,110,0.06) 0%, transparent 70%);
-}
-
-/* ---- Label plate ---- */
-.plate {
-  margin-top: 18px;
-  text-align: center;
-  opacity: 0.3;
-  transform: translateY(4px);
-  transition: opacity 0.4s ease, transform 0.4s ease;
-}
-
-.plateOn {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.plateLine {
-  width: 24px;
-  height: 1px;
-  background: var(--gold-dim);
-  margin: 0 auto 10px;
-}
-
-.plateTitle {
-  display: block;
+.hoverTitle {
   font-family: var(--font-serif);
-  font-size: 15px;
+  font-size: 18px;
   font-style: italic;
   color: var(--white);
-  margin-bottom: 4px;
 }
 
-.plateSub {
-  display: block;
+.hoverSub {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 10px;
   letter-spacing: 0.15em;
   color: var(--gold);
   text-transform: uppercase;
-  margin-bottom: 3px;
 }
 
-.plateCount {
-  display: block;
+.hoverClick {
   font-family: var(--font-mono);
   font-size: 9px;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   color: var(--white-faint);
   text-transform: uppercase;
+  margin-top: 2px;
 }
 
-/* ---- Progress & bottom bar ---- */
+/* ── Zoom indicator ── */
+.zoomIndicator {
+  position: absolute;
+  top: calc(var(--nav-height) + 90px);
+  right: 48px;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.zoomIndicator span {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--gold);
+  text-transform: uppercase;
+  background: rgba(8,8,8,0.7);
+  padding: 4px 10px;
+  border: 1px solid var(--gold-dim);
+}
+
+/* ── Progress bar ── */
 .progressWrap {
   flex-shrink: 0;
-  padding: 0 48px 16px;
+  padding: 0 48px 14px;
+  position: relative;
+  z-index: 10;
 }
 
 .progressBar {
   height: 1px;
   background: var(--border);
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   position: relative;
 }
 
 .progressFill {
   position: absolute;
-  left: 0;
-  top: 0;
+  left: 0; top: 0;
   height: 1px;
-  background: var(--gold);
-  transition: width 0.1s linear;
+  background: linear-gradient(to right, var(--gold-dim), var(--gold));
+  transition: width 0.06s linear;
 }
 
 .bottomBar {
   display: flex;
   justify-content: space-between;
-  align-items: center;
 }
 
 .bottomCount {
@@ -445,17 +210,11 @@
   color: var(--gold);
 }
 
-/* ---- Responsive ---- */
+/* ── Responsive ── */
 @media (max-width: 768px) {
-  .topBar {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-    padding: 20px 24px 16px;
-  }
+  .topBar { flex-direction: column; align-items: flex-start; gap: 14px; padding: 18px 24px 12px; }
   .topRight { align-items: flex-start; }
   .filters { justify-content: flex-start; }
-  .progressWrap { padding: 0 24px 14px; }
-  .frameWrap { margin: 0 16px; padding-top: 52px; }
-  .spacer { width: 24px; }
+  .progressWrap { padding: 0 24px 12px; }
+  .zoomIndicator { right: 24px; }
 }

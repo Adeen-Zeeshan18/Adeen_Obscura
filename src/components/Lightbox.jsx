@@ -72,6 +72,19 @@ export default function Lightbox({ collection, startIndex = 0, onClose }) {
             <span className={styles.caption}>{img.caption}</span>
             <span className={styles.collectionName}>{collection.title}, {img.year}</span>
           </div>
+
+          {/* EXIF panel */}
+          {img.exif && (
+            <div className={styles.exif}>
+              {Object.entries(img.exif).map(([key, val]) => (
+                <div key={key} className={styles.exifItem}>
+                  <span className={styles.exifKey}>{key}</span>
+                  <span className={styles.exifVal}>{val}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className={styles.counter}>
             <span className={styles.current}>{String(current + 1).padStart(2, '0')}</span>
             <span className={styles.sep}>/</span>
