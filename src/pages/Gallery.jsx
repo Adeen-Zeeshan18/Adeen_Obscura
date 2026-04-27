@@ -12,7 +12,7 @@ export default function Gallery() {
   const [lightbox, setLightbox]             = useState(null)
   const [hoveredId, setHoveredId]           = useState(null)
   const [scrollProgress, setScrollProgress] = useState(0)
-  const [zoomLevel, setZoomLevel]           = useState(0)
+  const [zoomLevel, setZoomLevel]           = useState(0.1)
 
   const trackRef     = useRef(null)
   const scrollX      = useRef(0)
@@ -21,9 +21,11 @@ export default function Gallery() {
   const isDragging   = useRef(false)
   const dragStartX   = useRef(0)
   const dragScrollX  = useRef(0)
-  const zoomLevelRef = useRef(0)
+  const zoomLevelRef = useRef(0.3)
   const zoomAction   = useRef(0)
   const zoomRaf      = useRef(null)
+  const frameRefs    = useRef([])
+  const [spotlightPositions, setSpotlightPositions] = useState([])
 
   const setZoom = useCallback((value) => {
     zoomLevelRef.current = value
@@ -46,6 +48,10 @@ export default function Gallery() {
     zoomRaf.current = requestAnimationFrame(animateZoom)
   }, [setZoom])
 
+  const setFrameRef = useCallback((el, index) => {
+    frameRefs.current[index] = el
+  }, [])
+
   const startZoom = useCallback((dir) => {
     if (zoomAction.current === dir) return
     zoomAction.current = dir
@@ -64,13 +70,32 @@ export default function Gallery() {
     ? collections
     : collections.filter(c => c.category === activeCategory)
 
+  const updateSpotlightPositions = useCallback(() => {
+    const track = trackRef.current
+    if (!track) return
+    const trackRect = track.getBoundingClientRect()
+    setSpotlightPositions(filtered.map((_, index) => {
+      const frame = frameRefs.current[index]
+      if (!frame) return null
+      const rect = frame.getBoundingClientRect()
+      return {
+        left: rect.left + rect.width / 2 - trackRect.left,
+        isHovered: hoveredId === filtered[index].id,
+      }
+    }).filter(Boolean))
+  }, [filtered, hoveredId])
+
+  const clamp = (value, min, max) => Math.min(max, Math.max(min, value))
+
   const tick = useCallback(() => {
     const track = trackRef.current
     if (!track) return
+    const max = track.scrollWidth - track.clientWidth
+    targetX.current = clamp(targetX.current, 0, max)
     const diff = targetX.current - scrollX.current
     scrollX.current += diff * 0.08
+    scrollX.current = clamp(scrollX.current, 0, max)
     track.scrollLeft = scrollX.current
-    const max = track.scrollWidth - track.clientWidth
     setScrollProgress(max > 0 ? scrollX.current / max : 0)
     if (Math.abs(diff) > 0.5) {
       rafId.current = requestAnimationFrame(tick)
@@ -93,13 +118,25 @@ export default function Gallery() {
     if (!track) return
     const onWheel = (e) => {
       e.preventDefault()
-      targetX.current = targetX.current + e.deltaY * 1.6
+      const max = track.scrollWidth - track.clientWidth
+      targetX.current = clamp(targetX.current + e.deltaY * 1.6, 0, max)
       if (rafId.current) cancelAnimationFrame(rafId.current)
       rafId.current = requestAnimationFrame(tick)
     }
     track.addEventListener('wheel', onWheel, { passive: false })
     return () => track.removeEventListener('wheel', onWheel)
   }, [tick, filtered])
+
+  useEffect(() => {
+    updateSpotlightPositions()
+    const track = trackRef.current
+    window.addEventListener('resize', updateSpotlightPositions)
+    if (track) track.addEventListener('scroll', updateSpotlightPositions)
+    return () => {
+      window.removeEventListener('resize', updateSpotlightPositions)
+      if (track) track.removeEventListener('scroll', updateSpotlightPositions)
+    }
+  }, [updateSpotlightPositions, zoomLevel, filtered])
 
   useEffect(() => {
     const track = trackRef.current
@@ -112,11 +149,11 @@ export default function Gallery() {
     }
     const onMove = (e) => {
       if (!isDragging.current) return
+      const max = track.scrollWidth - track.clientWidth
       const delta = dragStartX.current - e.clientX
-      targetX.current = dragScrollX.current + delta
+      targetX.current = clamp(dragScrollX.current + delta, 0, max)
       scrollX.current = targetX.current
       track.scrollLeft = scrollX.current
-      const max = track.scrollWidth - track.clientWidth
       setScrollProgress(max > 0 ? scrollX.current / max : 0)
     }
     const onUp = () => { isDragging.current = false }
@@ -164,9 +201,9 @@ export default function Gallery() {
   }, [])
 
   const zoomed = zoomLevel > 0.6
+  const zoomOpacity = Math.max(0, Math.min(1, (zoomLevel - 0.05) / 0.75)) // Smooth transition from 0.05 to 0.8
   const trackInnerStyle = {
     transform: `scale(${1 - zoomLevel * 0.62}) translateY(${zoomLevel * 8}%)`,
-    opacity: 1 - zoomLevel * 0.18,
   }
 
   return (
@@ -201,8 +238,28 @@ export default function Gallery() {
       <div className={styles.museum}>
         <div className={styles.ceilingRail} />
 
+        <div className={styles.spotlightOverlay} aria-hidden="true">
+          {spotlightPositions.map((pos, i) => (
+            <div key={i} className={styles.spotlightOverlayItem} style={{ left: `${pos.left}px` }}>
+              <div className={styles.spotlight}>
+                <div className={styles.spWire} />
+                <div className={`${styles.spHead} ${pos.isHovered ? styles.spHeadOn : ''}`}>
+                  <div className={`${styles.spLens} ${pos.isHovered ? styles.spLensOn : ''}`} />
+                  <div className={styles.spRim} />
+                </div>
+              </div>
+              {pos.isHovered && (
+                <>
+                  <div className={`${styles.lightCone} ${styles.lightConeOn}`} />
+                  <div className={`${styles.wallPool} ${styles.wallPoolOn}`} />
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+
         <button className={`${styles.zoomBtn} ${zoomed ? styles.zoomActive : ''}`}
-          onClick={() => setZoom(zoomed ? 0 : 1)} data-hover>
+          onClick={() => setZoom(zoomed ? 0.3 : 1)} data-hover>
           {zoomed
             ? <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6H10M6 2V10" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/></svg>
             : <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6H10" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/></svg>
@@ -213,12 +270,12 @@ export default function Gallery() {
           <div className={styles.trackInner} style={trackInnerStyle}>
             <div className={styles.spacer} />
             {filtered.map((col, i) => (
-              <MuseumFrame key={col.id} collection={col} index={i}
-                isHovered={hoveredId === col.id && !zoomed}
-                onHover={(id) => !zoomed && setHoveredId(id)}
+              <MuseumFrame key={col.id} frameRef={(el) => setFrameRef(el, i)} collection={col} index={i}
+                isHovered={hoveredId === col.id}
+                onHover={setHoveredId}
                 onClick={() => setLightbox({ collection: col, startIndex: 0 })}
                 zoomLevel={zoomLevel}
-                zoomed={zoomed} />
+                zoomOpacity={zoomOpacity} />
             ))}
             <div className={styles.spacer} />
           </div>
@@ -248,29 +305,21 @@ export default function Gallery() {
   )
 }
 
-function MuseumFrame({ collection, index, isHovered, onHover, onClick, zoomLevel, zoomed }) {
+function MuseumFrame({ collection, index, isHovered, onHover, onClick, zoomLevel, zoomOpacity, frameRef }) {
   const [loaded, setLoaded] = useState(false)
-  const h  = FRAME_HEIGHTS[index % FRAME_HEIGHTS.length]
-  const w  = FRAME_WIDTHS[index % FRAME_WIDTHS.length]
+  const h  = 460 // Fixed height same as collection 1
+  const w  = 320 // Fixed width same as collection 1
   const oy = OFFSETS_Y[index % OFFSETS_Y.length]
 
   return (
-    <div className={styles.frameWrap}
+    <div ref={frameRef} className={styles.frameWrap}
       style={{ '--oy': `${oy}px`, width: `${w + 80}px`, margin: `0 ${4 + 28 * (1 - zoomLevel)}px` }}
       onMouseEnter={() => onHover(collection.id)}
       onMouseLeave={() => onHover(null)}
       onClick={onClick} data-hover>
 
-      <div className={styles.spotlight}>
-        <div className={styles.spWire} />
-        <div className={`${styles.spHead} ${isHovered ? styles.spHeadOn : ''}`}>
-          <div className={`${styles.spLens} ${isHovered ? styles.spLensOn : ''}`} />
-          <div className={styles.spRim} />
-        </div>
-      </div>
-
-      <div className={`${styles.lightCone} ${isHovered ? styles.lightConeOn : ''}`} />
-      <div className={`${styles.wallPool} ${isHovered ? styles.wallPoolOn : ''}`} />
+      <div className={`${styles.lightCone} ${isHovered ? styles.lightConeOn : ''}`} style={{ opacity: (1 - zoomOpacity) * (isHovered ? 1 : 0.16) }} />
+      <div className={`${styles.wallPool} ${isHovered ? styles.wallPoolOn : ''}`} style={{ opacity: (1 - zoomOpacity) * (isHovered ? 1 : 0) }} />
 
       <div className={`${styles.frame} ${isHovered ? styles.frameOn : ''}`} style={{ width: w, height: h }}>
         <div className={styles.frameBorder}>
