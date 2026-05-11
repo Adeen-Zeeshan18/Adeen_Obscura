@@ -6,57 +6,45 @@ export default function Nav({ activePage, onNavigate }) {
   const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40)
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
+    const fn = () => setScrolled(window.scrollY > 30)
+    window.addEventListener('scroll', fn, { passive: true })
+    return () => window.removeEventListener('scroll', fn)
   }, [])
 
   const links = [
-    { id: 'home', label: 'Home' },
-    { id: 'gallery', label: 'Gallery' },
-    { id: 'about', label: 'About' },
-    { id: 'contact', label: 'Contact' },
+    { id: 'home', label: '01 Home' },
+    { id: 'gallery', label: '02 Gallery' },
+    { id: 'about', label: '03 About' },
+    { id: 'contact', label: '04 Contact' },
   ]
 
-  const navigate = (page) => {
-    onNavigate(page)
-    setMenuOpen(false)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
+  const nav = (page) => { onNavigate(page); setMenuOpen(false); window.scrollTo({ top: 0 }) }
 
   return (
     <nav className={`${styles.nav} ${scrolled ? styles.scrolled : ''}`}>
       <div className={styles.inner}>
-        <button
-          className={styles.logo}
-          onClick={() => navigate('home')}
-          data-hover
-        >
-          <span className={styles.logoText}>OBSCURA</span>
-          <span className={styles.logoDot}>●</span>
+        <button className={styles.logo} onClick={() => nav('home')} data-hover>
+          AESTHETE
         </button>
 
         <ul className={`${styles.links} ${menuOpen ? styles.open : ''}`}>
-          {links.map((link) => (
-            <li key={link.id}>
+          {links.map(l => (
+            <li key={l.id}>
               <button
-                className={`${styles.link} ${activePage === link.id ? styles.active : ''}`}
-                onClick={() => navigate(link.id)}
-                data-hover
-              >
-                {link.label}
-                <span className={styles.linkUnderline} />
+                className={`${styles.link} ${activePage === l.id ? styles.active : ''}`}
+                onClick={() => nav(l.id)} data-hover>
+                {l.label}
               </button>
             </li>
           ))}
         </ul>
 
-        <button
-          className={`${styles.burger} ${menuOpen ? styles.burgerOpen : ''}`}
-          onClick={() => setMenuOpen(!menuOpen)}
-          aria-label="Toggle menu"
-          data-hover
-        >
+        <button className={styles.contactBtn} onClick={() => nav('contact')} data-hover>
+          INQUIRE
+        </button>
+
+        <button className={`${styles.burger} ${menuOpen ? styles.burgerOpen : ''}`}
+          onClick={() => setMenuOpen(!menuOpen)} aria-label="Menu" data-hover>
           <span /><span /><span />
         </button>
       </div>

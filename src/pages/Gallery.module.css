@@ -1,220 +1,405 @@
-/* ============================================================
-   GALLERY — 3D Three.js Museum Wall
-   ============================================================ */
-
 .page {
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  padding-top: var(--nav-height);
-  background: #0e0b08;
-}
-
-/* ── Top bar ── */
-.topBar {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  padding: 22px 48px 16px;
-  flex-shrink: 0;
-  border-bottom: 1px solid var(--border);
-  z-index: 10;
+  /* Fixed spotlight anchor: flush under category bar (tune px if layout shifts) */
+  --gallery-spotlight-top: calc(var(--nav-height) + 84px);
   position: relative;
-}
-
-.eyebrow {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.25em;
-  color: var(--white-faint);
-  text-transform: uppercase;
-  margin-bottom: 6px;
-}
-
-.eyebrowLine {
-  display: block;
-  width: 28px;
-  height: 1px;
-  background: var(--gold-dim);
-}
-
-.title {
-  font-family: var(--font-serif);
-  font-size: clamp(28px, 3.5vw, 46px);
-  font-weight: 300;
-  color: var(--white);
-  line-height: 1;
-}
-
-.topRight {
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 10px;
+  padding-top: var(--nav-height);
+  background: var(--black);
+  overflow: hidden;
 }
 
-.hint {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  color: var(--white-faint);
-  text-transform: uppercase;
+/* Film grain + edge vignette */
+.grain {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+  opacity: 0.055;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grainShift 8s steps(10) infinite;
 }
 
-.filters {
+@keyframes grainShift {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-2%, -3%); }
+  30% { transform: translate(3%, 1%); }
+  50% { transform: translate(-1%, 2%); }
+  70% { transform: translate(2%, -2%); }
+  90% { transform: translate(-3%, 0); }
+}
+
+.vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 49;
+  background: radial-gradient(
+    ellipse 72% 65% at 50% 48%,
+    transparent 0%,
+    transparent 42%,
+    rgba(0, 0, 0, 0.35) 88%,
+    rgba(0, 0, 0, 0.55) 100%
+  );
+}
+
+/* Filter bar — above fixed spotlight layer */
+.filterBar {
+  position: relative;
+  z-index: 2;
   display: flex;
-  gap: 2px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  justify-content: center;
+  gap: 0;
+  padding: 32px 60px 0;
+  flex-shrink: 0;
+  margin-bottom: 18px;
 }
-
 .filterBtn {
   background: none;
-  border: 1px solid transparent;
-  color: var(--white-faint);
-  font-family: var(--font-mono);
+  border: none;
+  cursor: none;
   font-size: 10px;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.14em;
+  color: var(--white-faint);
   text-transform: uppercase;
-  padding: 6px 14px;
-  cursor: none;
-  transition: color 0.2s, border-color 0.2s;
-}
-
-.filterBtn:hover { color: var(--white); border-color: var(--border); }
-.filterActive    { color: var(--gold) !important; border-color: var(--gold-dim) !important; }
-
-/* ── Three.js canvas ── */
-.canvas {
-  flex: 1;
-  width: 100%;
+  padding: 6px 16px;
+  transition: color 0.2s;
   position: relative;
-  cursor: none;
+}
+.filterBtn::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 16px;
+  right: 16px;
+  height: 1px;
+  background: var(--white);
+  transform: scaleX(0);
+  transition: transform 0.3s var(--ease);
+}
+.filterBtn:hover { color: var(--white); }
+.filterActive { color: var(--white) !important; }
+.filterActive::after { transform: scaleX(1); }
+
+/* Stage — tilt CSS vars; stacks above fixed header spotlight */
+.stage {
+  --tilt-x: 0;
+  --tilt-y: 0;
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 90px 0 24px;
+  isolation: isolate;
   overflow: hidden;
 }
 
-.canvas canvas {
-  display: block;
-  width: 100% !important;
-  height: 100% !important;
+/* Streetlight: fixed just below category bar (not under main nav) */
+.headerSpotlight {
+  position: fixed;
+  left: 50%;
+  top: var(--gallery-spotlight-top);
+  transform: translateX(-50%);
+  z-index: 1;
+  width: 0;
+  height: 0;
+  pointer-events: none;
 }
 
-/* ── Hover label ── */
-.hoverLabel {
+.spotTop {
   position: absolute;
-  bottom: 80px;
   left: 50%;
+  top: -58px;
+  width: 220px;
+  height: 220px;
   transform: translateX(-50%);
+  background: radial-gradient(
+    circle at center,
+    rgba(227, 226, 226, 0.3) 0%,
+    rgba(227, 226, 226, 0.16) 32%,
+    rgba(227, 226, 226, 0.06) 58%,
+    rgba(227, 226, 226, 0) 100%
+  );
+  filter: blur(14px);
+  opacity: 0.75;
+  animation: spotlightPulseTop 5.5s ease-in-out infinite;
+  transition: width 0.35s var(--ease), height 0.35s var(--ease), opacity 0.35s var(--ease), top 0.35s var(--ease);
+}
+
+.spotBeam {
+  position: absolute;
+  left: 50%;
+  top: -14px;
+  width: 520px;
+  height: min(82vh, 880px);
+  transform: translateX(-50%) translateY(10px);
+  background: linear-gradient(
+    to bottom,
+    rgba(227, 226, 226, 0.24) 0%,
+    rgba(227, 226, 226, 0.14) 14%,
+    rgba(227, 226, 226, 0.09) 32%,
+    rgba(227, 226, 226, 0.045) 52%,
+    rgba(227, 226, 226, 0) 100%
+  );
+  clip-path: polygon(40% 0%, 60% 0%, 95% 100%, 5% 100%);
+  filter: blur(12px);
+  mix-blend-mode: normal;
+  opacity: 0.62;
+  animation: spotlightPulseBeam 6.2s ease-in-out infinite 0.4s;
+  transition:
+    width 0.35s var(--ease),
+    height 0.35s var(--ease),
+    opacity 0.35s var(--ease),
+    top 0.35s var(--ease),
+    filter 0.35s var(--ease),
+    transform 0.35s var(--ease);
+}
+
+.page:has(.centerFrame:hover) .spotTop {
+  width: 260px;
+  height: 260px;
+  top: -68px;
+  opacity: 0.92;
+  animation: none;
+}
+
+.page:has(.centerFrame:hover) .spotBeam {
+  width: 680px;
+  height: min(90vh, 960px);
+  top: -14px;
+  opacity: 0.82;
+  filter: blur(14px);
+  transform: translateX(-50%) translateY(14px);
+  animation: none;
+}
+
+/* Side frames — parallax depth */
+.sideFrame {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 22%;
+  overflow: hidden;
+  cursor: none;
+  z-index: 0;
+  transform: translate3d(calc(var(--tilt-x) * -10px), calc(var(--tilt-y) * 6px), 0);
+  transition: transform 0.35s var(--ease);
+}
+.sideImg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  filter: brightness(0.25) blur(2px);
+  transition: filter 0.4s, transform 0.5s var(--ease);
+  transform: scale(0.96);
+}
+.sideFrame:hover .sideImg {
+  filter: brightness(0.4) blur(1px);
+  transform: scale(0.98);
+}
+.sideFade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Center column — slightly smaller frame so spotlight + depth read stronger */
+.centerWrap {
+  position: relative;
+  z-index: 2;
+  width: min(360px, 36vw);
+  perspective: 1050px;
+  perspective-origin: 50% 40%;
+}
+
+.centerMotion {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  pointer-events: none;
-  animation: fadeUp 0.25s ease both;
-  z-index: 20;
+  cursor: none;
+  overflow: visible;
+  transform-style: preserve-3d;
+  will-change: transform, opacity;
 }
 
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
-  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+@keyframes spotlightPulseTop {
+  0%, 100% { opacity: 0.7; transform: translateX(-50%) scale(1); }
+  50% { opacity: 0.88; transform: translateX(-50%) scale(1.04); }
 }
 
-.hoverTitle {
-  font-family: var(--font-serif);
-  font-size: 18px;
-  font-style: italic;
+@keyframes spotlightPulseBeam {
+  0%, 100% { opacity: 0.58; filter: blur(12px); }
+  50% { opacity: 0.76; filter: blur(15px); }
+}
+
+.centerFrame {
+  width: 100%;
+  height: min(52vh, 540px);
+  position: relative;
+  overflow: hidden;
+  background: #0d0e0f;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: 2;
+  transform-style: preserve-3d;
+  transform:
+    rotateX(calc(var(--tilt-y, 0) * -6.5deg))
+    rotateY(calc(var(--tilt-x, 0) * 8.5deg))
+    translateZ(20px);
+  box-shadow:
+    calc(var(--tilt-x, 0) * -36px) calc(52px + var(--tilt-y, 0) * 20px) 100px rgba(0, 0, 0, 0.84),
+    calc(var(--tilt-x, 0) * -14px) calc(20px + var(--tilt-y, 0) * 9px) 48px rgba(0, 0, 0, 0.58),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+  transition: transform 0.45s var(--ease), box-shadow 0.45s var(--ease);
+}
+
+.centerFrame:hover {
+  transform:
+    rotateX(calc(var(--tilt-y, 0) * -6.5deg))
+    rotateY(calc(var(--tilt-x, 0) * 8.5deg))
+    translateZ(38px)
+    scale(1.008);
+  box-shadow:
+    calc(var(--tilt-x, 0) * -44px) calc(62px + var(--tilt-y, 0) * 24px) 130px rgba(0, 0, 0, 0.9),
+    calc(var(--tilt-x, 0) * -18px) calc(26px + var(--tilt-y, 0) * 11px) 56px rgba(0, 0, 0, 0.65),
+    0 0 56px rgba(227, 226, 226, 0.08);
+}
+
+.centerImg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  display: block;
+  position: relative;
+  z-index: 1;
+  transition: transform 0.55s var(--ease);
+}
+
+.centerFrame:hover .centerImg {
+  transform: scale(1.003);
+}
+
+/* Meta below center frame */
+.centerMeta {
+  width: 100%;
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  transform: translateZ(12px);
+}
+.centerDivider {
+  width: 1px;
+  height: 32px;
+  background: var(--border-mid);
+}
+.centerInfo { text-align: center; }
+.centerCode {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--white);
+  margin-bottom: 5px;
+}
+.centerSub {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--white-faint);
+}
+
+/* Nav buttons */
+.navBtns {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 0 60px 28px;
+  flex-shrink: 0;
+}
+.navBtn {
+  width: 44px;
+  height: 44px;
+  background: none;
+  border: 1px solid var(--border-hover);
+  color: var(--white-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: none;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+.navBtn:hover {
+  border-color: var(--white);
   color: var(--white);
 }
 
-.hoverSub {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.15em;
-  color: var(--gold);
-  text-transform: uppercase;
-}
-
-.hoverClick {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.12em;
-  color: var(--white-faint);
-  text-transform: uppercase;
-  margin-top: 2px;
-}
-
-/* ── Zoom indicator ── */
-.zoomIndicator {
-  position: absolute;
-  top: calc(var(--nav-height) + 90px);
-  right: 48px;
-  z-index: 20;
-  pointer-events: none;
-}
-
-.zoomIndicator span {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  color: var(--gold);
-  text-transform: uppercase;
-  background: rgba(8,8,8,0.7);
-  padding: 4px 10px;
-  border: 1px solid var(--gold-dim);
-}
-
-/* ── Progress bar ── */
-.progressWrap {
-  flex-shrink: 0;
-  padding: 0 48px 14px;
-  position: relative;
-  z-index: 10;
-}
-
-.progressBar {
-  height: 1px;
-  background: var(--border);
-  margin-bottom: 8px;
-  position: relative;
-}
-
-.progressFill {
-  position: absolute;
-  left: 0; top: 0;
-  height: 1px;
-  background: linear-gradient(to right, var(--gold-dim), var(--gold));
-  transition: width 0.06s linear;
-}
-
-.bottomBar {
+/* Footer */
+.footer {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  padding: 20px 60px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
 }
-
-.bottomCount {
-  font-family: var(--font-mono);
+.footerCopy {
   font-size: 10px;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.08em;
   color: var(--white-faint);
-  text-transform: uppercase;
 }
-
-.bottomPct {
-  font-family: var(--font-mono);
+.footerLinks { display: flex; gap: 28px; }
+.footerLink {
+  background: none;
+  border: none;
+  cursor: none;
   font-size: 10px;
   letter-spacing: 0.1em;
-  color: var(--gold);
+  color: var(--white-faint);
+  text-transform: uppercase;
+  transition: color 0.2s;
 }
+.footerLink:hover { color: var(--white); }
 
-/* ── Responsive ── */
 @media (max-width: 768px) {
-  .topBar { flex-direction: column; align-items: flex-start; gap: 14px; padding: 18px 24px 12px; }
-  .topRight { align-items: flex-start; }
-  .filters { justify-content: flex-start; }
-  .progressWrap { padding: 0 24px 12px; }
-  .zoomIndicator { right: 24px; }
+  .page {
+    /* Taller category row when filters wrap */
+    --gallery-spotlight-top: calc(var(--nav-height) + 116px);
+  }
+  .centerWrap {
+    width: min(78vw, 380px);
+    max-width: 380px;
+    perspective: 980px;
+  }
+  .spotTop {
+    width: 160px;
+    height: 160px;
+    top: -46px;
+  }
+  .spotBeam {
+    width: 360px;
+    height: min(76vh, 700px);
+    top: -12px;
+    transform: translateX(-50%) translateY(8px);
+  }
+  .centerFrame { height: min(48vh, 480px); }
+  .sideFrame { width: 10%; }
+  .stage { padding-top: 78px; }
+  .navBtns,
+  .footer {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+  .filterBar {
+    padding: 20px 24px 0;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+  .grain { opacity: 0.04; }
 }

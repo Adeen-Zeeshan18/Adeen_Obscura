@@ -5,194 +5,166 @@ import { collections } from '../data/collections'
 export default function Home({ onNavigate }) {
   const heroRef = useRef(null)
   const [offsetY, setOffsetY] = useState(0)
+  const [count, setCount] = useState({ col: 0, works: 0 })
 
   useEffect(() => {
-    const onScroll = () => setOffsetY(window.scrollY)
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
+    const fn = () => setOffsetY(window.scrollY)
+    window.addEventListener('scroll', fn, { passive: true })
+    return () => window.removeEventListener('scroll', fn)
   }, [])
 
-  const featured = collections.slice(0, 3)
+  useEffect(() => {
+    const target = {
+      col: collections.length,
+      works: collections.reduce((a, c) => a + c.count, 0),
+    }
+
+    let frame = 0
+    const total = 60
+
+    const timer = setInterval(() => {
+      frame++
+      const p = frame / total
+
+      setCount({
+        col: Math.round(p * target.col),
+        works: Math.round(p * target.works),
+      })
+
+      if (frame >= total) clearInterval(timer)
+    }, 20)
+
+    return () => clearInterval(timer)
+  }, [])
+
+  const series = collections.slice(0, 3)
+  const nav = (page) => { onNavigate(page); window.scrollTo({ top: 0 }) }
 
   return (
     <main className={styles.page}>
-      {/* Hero */}
+
+      {/* HERO */}
       <section className={styles.hero} ref={heroRef}>
-        <div className={styles.heroBg} style={{ transform: `translateY(${offsetY * 0.4}px)` }}>
+        <div
+          className={styles.heroBg}
+          style={{ transform: `translateY(${offsetY * 0.3}px)` }}
+        >
           <img
-            src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=1800&q=85"
-            alt=""
-            className={styles.heroBgImg}
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuC2NFRg0NXStzDgXhatzgzMdl5PlNgc6Gnz7tq59ntCkFD7t49vDMcTDW2c1ip2WNP0RYxiY8m5DLxLKocRfQBVWaGtWg8dHNiQsHlk4myDaByOjQSxC5tbBI42J_RfqotllsK5mC4NUStRfJzR-2ZAN5s0e9RLD9fG-web3Ww91dQDuTGWakUyITgNXI2sjV5sGn3pbNu5aRlvPL77NLjQ3HUWANITp8z996znW4eKr-YxKpC0TTexN_rnskE5Y3TheHpnU-8S3u8"
+            className={styles.heroImg}
           />
-          <div className={styles.heroBgOverlay} />
+          <div className={styles.overlay} />
         </div>
 
         <div className={styles.heroContent}>
-          <div className={styles.heroEyebrow}>
-            <span className={styles.line} />
-            <span className={styles.eyebrowText}>Fine Art Photography</span>
+          <h1 className={styles.title}>3D Immersive Photography Portfolio</h1>
+
+          <div className={styles.bottom}>
+            <button onClick={() => nav('gallery')} className={styles.cta}>
+              ENTER GALLERY
+            </button>
+
+            <div className={styles.stats}>
+              <div>
+                <span>{count.col}</span>
+                <p>COLLECTIONS</p>
+              </div>
+              <div>
+                <span>{count.works}</span>
+                <p>WORKS</p>
+              </div>
+            </div>
           </div>
+        </div>
 
-          <h1 className={styles.heroTitle}>
-            <span className={styles.titleLine}>Light</span>
-            <span className={styles.titleLineItalic}>& Shadow</span>
-          </h1>
+        <div className={styles.scroll}>
+          <span>EXPLORE</span>
+          <div className={styles.line} />
+        </div>
+      </section>
 
-          <p className={styles.heroSub}>
-            A curated collection of visual stories.<br />
-            Where darkness reveals truth.
+      {/* QUOTE */}
+      <section className={styles.quoteSection}>
+        <blockquote>
+          "The interface should disappear so the image can breathe."
+        </blockquote>
+        <cite>— CINEMATIC GALLERY MANIFESTO</cite>
+      </section>
+
+      {/* SERIES */}
+      <section className={styles.series}>
+        <div className={styles.seriesHeader}>
+          <h2>Selected Series</h2>
+          <button onClick={() => nav('gallery')}>VIEW ARCHIVE</button>
+        </div>
+
+        <div className={styles.grid}>
+          {series.map((col, i) => (
+            <SeriesItem key={col.id} col={col} index={i} onNavigate={nav} />
+          ))}
+        </div>
+      </section>
+
+      {/* VISION */}
+      <section className={styles.vision}>
+        <div>
+          <h2>Atmospheric minimalism for visual storytelling</h2>
+          <p>
+            The system is built like a darkened gallery: sharp frames, strict alignment,
+            and generous negative space that keeps attention on each image.
           </p>
 
-          <div className={styles.heroCta}>
-            <button
-              className={styles.ctaBtn}
-              onClick={() => { onNavigate('gallery'); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
-              data-hover
-            >
-              Enter Gallery
-            </button>
-            <div className={styles.heroStats}>
-              <div className={styles.stat}>
-                <span className={styles.statNum}>6</span>
-                <span className={styles.statLabel}>Collections</span>
-              </div>
-              <div className={styles.statDivider} />
-              <div className={styles.stat}>
-                <span className={styles.statNum}>52</span>
-                <span className={styles.statLabel}>Works</span>
-              </div>
-            </div>
-          </div>
+          <button onClick={() => nav('about')}>
+            ABOUT THE ARTIST ↗
+          </button>
         </div>
 
-        <div className={styles.heroScroll}>
-          <span className={styles.scrollLine} />
-          <span className={styles.scrollText}>Scroll</span>
+        <div className={styles.visionImg}>
+          <img src="https://images.unsplash.com/photo-1452587925148-ce544e77e70d?w=700&q=85" />
         </div>
       </section>
 
-      {/* Statement */}
-      <section className={styles.statement}>
-        <div className="container">
-          <blockquote className={styles.quote}>
-            "Photography is the simultaneous recognition, in a fraction of a second,
-            of the significance of an event."
-            <cite className={styles.quoteCite}>— Henri Cartier-Bresson</cite>
-          </blockquote>
+      {/* NEWSLETTER */}
+      <section className={styles.newsletter}>
+        <div>
+          <h3>Stay in the loop.</h3>
+          <p>Join our private list for new series and releases.</p>
+        </div>
+
+        <div className={styles.form}>
+          <input placeholder="ENTER YOUR EMAIL" />
+          <button>SUBSCRIBE</button>
         </div>
       </section>
 
-      {/* Featured */}
-      <section className={styles.featured}>
-        <div className="container">
-          <div className={styles.sectionHeader}>
-            <div className={styles.sectionLabel}>
-              <span className={styles.labelLine} />
-              <span>Featured Work</span>
-            </div>
-            <button
-              className={styles.viewAll}
-              onClick={() => { onNavigate('gallery'); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
-              data-hover
-            >
-              View All Collections →
-            </button>
-          </div>
-
-          <div className={styles.featuredGrid}>
-            {featured.map((col, i) => (
-              <FeaturedItem
-                key={col.id}
-                collection={col}
-                index={i}
-                onNavigate={onNavigate}
-              />
-            ))}
-          </div>
+      {/* FOOTER */}
+      <footer className={styles.footer}>
+        <span>© 2024 OBSCURA</span>
+        <div>
+          {['INSTAGRAM','BEHANCE','VIMEO','EMAIL'].map(s => (
+            <button key={s}>{s}</button>
+          ))}
         </div>
-      </section>
+      </footer>
 
-      {/* Process */}
-      <section className={styles.process}>
-        <div className="container">
-          <div className={styles.processInner}>
-            <div className={styles.processText}>
-              <div className={styles.sectionLabel}>
-                <span className={styles.labelLine} />
-                <span>The Vision</span>
-              </div>
-              <h2 className={styles.processHeading}>
-                Every frame is<br />
-                <em>an intention.</em>
-              </h2>
-              <p className={styles.processPara}>
-                I work at the intersection of documentary and fine art—
-                finding the extraordinary in the mundane, the poetry in the overlooked.
-                Shot on film and digital, processed with deliberate restraint.
-              </p>
-              <button
-                className={styles.processLink}
-                onClick={() => { onNavigate('about'); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
-                data-hover
-              >
-                About the Artist
-                <span className={styles.processArrow}>→</span>
-              </button>
-            </div>
-            <div className={styles.processImage}>
-              <img
-                src="https://images.unsplash.com/photo-1452587925148-ce544e77e70d?w=700&q=85"
-                alt="Camera"
-              />
-              <div className={styles.processImageCaption}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.1em', color: 'var(--white-faint)', textTransform: 'uppercase' }}>
-                  Leica M6 — 35mm Summilux
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
     </main>
   )
 }
 
-function FeaturedItem({ collection, index, onNavigate }) {
-  const [loaded, setLoaded] = useState(false)
-  const ref = useRef(null)
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting) {
-        ref.current?.classList.add(styles.revealed)
-        observer.disconnect()
-      }
-    }, { threshold: 0.15 })
-    if (ref.current) observer.observe(ref.current)
-    return () => observer.disconnect()
-  }, [])
-
+function SeriesItem({ col, index, onNavigate }) {
   return (
     <article
-      ref={ref}
-      className={`${styles.featuredItem} ${index === 0 ? styles.featuredLarge : ''}`}
-      style={{ '--delay': `${index * 0.12}s` }}
-      onClick={() => { onNavigate('gallery'); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
-      data-hover
+      className={styles.item}
+      onClick={() => onNavigate('gallery')}
     >
-      <div className={styles.featuredImg}>
-        <img
-          src={collection.coverImage}
-          alt={collection.title}
-          onLoad={() => setLoaded(true)}
-          className={loaded ? styles.imgLoaded : ''}
-        />
-        <div className={styles.featuredOverlay} />
+      <div className={styles.imgWrap}>
+        <img src={col.coverImage} />
       </div>
-      <div className={styles.featuredMeta}>
-        <span className={styles.featuredCategory}>{collection.category}</span>
-        <h3 className={styles.featuredTitle}>{collection.title}</h3>
-        <span className={styles.featuredYear}>{collection.year}</span>
+
+      <div className={styles.meta}>
+        <span>{String(index + 1).padStart(2, '0')}</span>
+        <h3>{col.category}</h3>
+        <span>→</span>
       </div>
     </article>
   )

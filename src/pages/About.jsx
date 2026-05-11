@@ -1,13 +1,5 @@
 import styles from './About.module.css'
 
-const awards = [
-  { year: '2024', title: 'International Photography Award', category: 'Fine Art — Silver' },
-  { year: '2023', title: 'Sony World Photography Awards', category: 'Portrait — Shortlist' },
-  { year: '2023', title: 'MACK First Book Award', category: 'Longlist' },
-  { year: '2022', title: 'Paris Photo — Emerging Talent', category: 'Selected' },
-  { year: '2021', title: 'British Journal of Photography', category: 'Portrait of Britain' },
-]
-
 const exhibitions = [
   { year: '2024', title: 'Into the Void', venue: 'Foam Museum, Amsterdam' },
   { year: '2024', title: 'Mercury Hour', venue: 'Tate Modern Tanks, London' },
@@ -19,129 +11,76 @@ const exhibitions = [
 export default function About() {
   return (
     <main className={styles.page}>
-      <div className="container">
+      <div className={styles.inner}>
 
-        {/* Hero split */}
+        {/* Portrait + main text */}
         <section className={styles.hero}>
-          <div className={styles.heroImage}>
-            <img
-              src="https://images.unsplash.com/photo-1552374196-c4e7ffc6e126?w=900&q=85"
-              alt="Portrait of the photographer"
-            />
-            <div className={styles.heroImageOverlay} />
-            <div className={styles.heroImageCaption}>
-              <span>Self-portrait, Warsaw 2023</span>
-            </div>
+          <div className={styles.portrait}>
+            <img src="https://images.unsplash.com/photo-1552374196-c4e7ffc6e126?w=900&q=85"
+              alt="Alex Voss" className={styles.portraitImg} />
           </div>
 
           <div className={styles.heroText}>
-            <div className={styles.eyebrow}>
-              <span className={styles.eyebrowLine} />
-              <span>About</span>
-            </div>
-            <h1 className={styles.name}>
-              Alex<br />
-              <em>Voss</em>
+            <div className={styles.eyebrow}>ALEX VOSS — ARCHIVE 03</div>
+            <h1 className={styles.heading}>
+              Capturing the silent dialogue between light and architecture.
             </h1>
-            <p className={styles.role}>Fine Art & Editorial Photographer</p>
             <p className={styles.bio}>
-              Based between Warsaw and London, I work at the intersection of documentary
-              photography and fine art. My practice explores themes of identity, isolation,
-              and the uncanny—drawn to subjects that exist in states of transition.
+              Based between Warsaw and London, my work explores the minimalist intersections of structural form and natural light. With over a decade of experience in fine art photography, I focus on the 'negative space' — the moments of stillness that exist within the chaos of the modern world. My approach is reductive, seeking to strip away the unnecessary until only the soul of the subject remains.
             </p>
-            <p className={styles.bio}>
-              I shoot primarily on medium-format film, believing the deliberate nature
-              of analogue photography creates a different quality of attention—both in
-              the making and the viewing of an image.
-            </p>
-            <div className={styles.contact}>
-              <a href="mailto:hello@obscura.com" className={styles.contactLink} data-hover>
-                hello@obscura.com
-              </a>
-              <span className={styles.contactDivider} />
-              <span className={styles.contactText}>Available for commissions</span>
+
+            <div className={styles.divider} />
+
+            <div className={styles.infoGrid}>
+              <div className={styles.infoItem}>
+                <span className={styles.infoLabel}>EMAIL</span>
+                <a href="mailto:hello@obscura.com" className={styles.infoVal} data-hover>
+                  hello@obscura.com
+                </a>
+              </div>
+              <div className={styles.infoItem}>
+                <span className={styles.infoLabel}>PRESENCE</span>
+                <span className={styles.infoValPlain}>Warsaw / London</span>
+              </div>
+              <div className={styles.infoItem}>
+                <span className={styles.infoLabel}>REPRESENTED BY</span>
+                <span className={styles.infoValPlain}>Agency VII Photo</span>
+              </div>
+              <div className={styles.infoItem}>
+                <span className={styles.infoLabel}>MEDIUM</span>
+                <span className={styles.infoValPlain}>Medium Format Film</span>
+              </div>
             </div>
           </div>
         </section>
 
-        {/* Divider */}
-        <div className={styles.divider} />
-
-        {/* Credentials */}
-        <section className={styles.credentials}>
-          <div className={styles.col}>
-            <h2 className={styles.colTitle}>
-              <span className={styles.colNum}>01</span>
-              Exhibitions
-            </h2>
-            <ul className={styles.list}>
-              {exhibitions.map((ex, i) => (
-                <li key={i} className={styles.listItem} style={{ '--i': i }}>
-                  <span className={styles.listYear}>{ex.year}</span>
-                  <div className={styles.listContent}>
-                    <span className={styles.listTitle}>{ex.title}</span>
-                    <span className={styles.listSub}>{ex.venue}</span>
-                  </div>
-                </li>
-              ))}
-            </ul>
+        {/* Exhibitions */}
+        <section className={styles.exhibitions}>
+          <div className={styles.exLeft}>
+            <h2 className={styles.exTitle}>Selected Exhibitions</h2>
           </div>
-
-          <div className={styles.colDivider} />
-
-          <div className={styles.col}>
-            <h2 className={styles.colTitle}>
-              <span className={styles.colNum}>02</span>
-              Recognition
-            </h2>
-            <ul className={styles.list}>
-              {awards.map((aw, i) => (
-                <li key={i} className={styles.listItem} style={{ '--i': i }}>
-                  <span className={styles.listYear}>{aw.year}</span>
-                  <div className={styles.listContent}>
-                    <span className={styles.listTitle}>{aw.title}</span>
-                    <span className={styles.listSub}>{aw.category}</span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
-
-        <div className={styles.divider} />
-
-        {/* Philosophy */}
-        <section className={styles.philosophy}>
-          <div className={styles.philLeft}>
-            <div className={styles.eyebrow}>
-              <span className={styles.eyebrowLine} />
-              <span>Philosophy</span>
-            </div>
-          </div>
-          <div className={styles.philRight}>
-            <blockquote className={styles.philQuote}>
-              "I am not interested in documenting the world as it is.
-              I am interested in the world as it feels—
-              the texture of a moment, the weight of light,
-              the silence inside an image."
-            </blockquote>
-            <div className={styles.philGrid}>
-              {[
-                { label: 'Primary Medium', value: 'Medium Format Film' },
-                { label: 'Cameras', value: 'Hasselblad 500C/M, Leica M6' },
-                { label: 'Based in', value: 'Warsaw / London' },
-                { label: 'Represented by', value: 'Agency VII Photo' },
-              ].map((item, i) => (
-                <div key={i} className={styles.philItem}>
-                  <span className={styles.philLabel}>{item.label}</span>
-                  <span className={styles.philValue}>{item.value}</span>
-                </div>
-              ))}
-            </div>
+          <div className={styles.exList}>
+            {exhibitions.map((ex, i) => (
+              <div key={i} className={styles.exItem} style={{ '--i': i }}>
+                <span className={styles.exYear}>{ex.year}</span>
+                <span className={styles.exName}>{ex.title}</span>
+                <span className={styles.exVenue}>{ex.venue}</span>
+              </div>
+            ))}
           </div>
         </section>
 
       </div>
+
+      {/* Footer */}
+      <footer className={styles.footer}>
+        <span className={styles.footerCopy}>© 2024 OBSCURA ARCHIVE. ALL RIGHTS RESERVED.</span>
+        <div className={styles.footerLinks}>
+          {['INSTAGRAM','BEHANCE','FOUNDATION'].map(s => (
+            <button key={s} className={styles.footerLink} data-hover>{s}</button>
+          ))}
+        </div>
+      </footer>
     </main>
   )
 }
