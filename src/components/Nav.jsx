@@ -12,8 +12,8 @@ export default function Nav({ activePage, onNavigate }) {
   }, [])
 
   const links = [
-    { id: 'home', label: '01 Home' },
-    { id: 'gallery', label: '02 Gallery' },
+    { id: 'home', label: '01 Work' },
+    { id: 'gallery', label: '02 Portfolio' },
     { id: 'about', label: '03 About' },
     { id: 'contact', label: '04 Contact' },
   ]
@@ -40,7 +40,7 @@ export default function Nav({ activePage, onNavigate }) {
         </ul>
 
         <button className={styles.contactBtn} onClick={() => nav('contact')} data-hover>
-          INQUIRE
+          Inquiry
         </button>
 
         <button className={`${styles.burger} ${menuOpen ? styles.burgerOpen : ''}`}

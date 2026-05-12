@@ -1,6 +1,10 @@
 .page {
-  /* Fixed spotlight anchor: flush under category bar (tune px if layout shifts) */
-  --gallery-spotlight-top: calc(var(--nav-height) + 84px);
+  /* Overwritten after layout: filterBar bottom + SPOTLIGHT_GAP_BELOW_FILTER_PX (useGalleryViewportSync) */
+  --gallery-spotlight-top: calc(var(--nav-height) + 96px);
+  /* 0–1: vertical fraction of .stage visible in viewport (useGalleryViewportSync) */
+  --gallery-stage-visibility: 1;
+  /* Narrow beam as hero scrolls away; opacity on beam stays GSAP/keyframes-friendly */
+  --gallery-beam-scale-x: calc(0.74 + 0.26 * var(--gallery-stage-visibility, 1));
   position: relative;
   min-height: 100vh;
   display: flex;
@@ -16,7 +20,7 @@
   inset: 0;
   pointer-events: none;
   z-index: 50;
-  opacity: 0.055;
+  opacity: calc(0.055 + 0.022 * (1 - var(--gallery-stage-visibility, 1)));
   mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   animation: grainShift 8s steps(10) infinite;
@@ -45,10 +49,45 @@
   );
 }
 
-/* Filter bar — above fixed spotlight layer */
+/* Extra edge falloff as the stage scrolls out of view (scroll-driven via --gallery-stage-visibility) */
+.vignette::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 76% 72% at 50% 50%,
+    transparent 0%,
+    transparent 36%,
+    rgba(0, 0, 0, 0.38) 72%,
+    rgba(0, 0, 0, 0.62) 100%
+  );
+  opacity: calc((1 - var(--gallery-stage-visibility, 1)) * 0.78);
+}
+
+/* Soft cursor-follow pool of light — under main beam (DOM order), weak so it never competes */
+.cursorLight {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: var(--cursor-light-opacity, 0);
+  transition: opacity 0.55s ease;
+  background: radial-gradient(
+    circle max(260px, 20vw) at var(--cursor-light-x, 50%) var(--cursor-light-y, 50%),
+    rgba(227, 226, 226, 0.07) 0%,
+    rgba(227, 226, 226, 0.028) 40%,
+    transparent 68%
+  );
+  mix-blend-mode: soft-light;
+}
+
+/* Filter bar — solid band + high z so labels always paint above the fixed beam */
 .filterBar {
   position: relative;
-  z-index: 2;
+  z-index: 4;
+  isolation: isolate;
+  background-color: var(--black);
   display: flex;
   justify-content: center;
   gap: 0;
@@ -88,7 +127,7 @@
   --tilt-x: 0;
   --tilt-y: 0;
   position: relative;
-  z-index: 2;
+  z-index: 3;
   flex: 1;
   display: flex;
   align-items: center;
@@ -98,13 +137,13 @@
   overflow: hidden;
 }
 
-/* Streetlight: fixed just below category bar (not under main nav) */
+/* Streetlight: fixed just below category bar (not under main nav); z below filter + stage */
 .headerSpotlight {
   position: fixed;
   left: 50%;
   top: var(--gallery-spotlight-top);
   transform: translateX(-50%);
-  z-index: 1;
+  z-index: 0;
   width: 0;
   height: 0;
   pointer-events: none;
@@ -113,7 +152,7 @@
 .spotTop {
   position: absolute;
   left: 50%;
-  top: -58px;
+  top: -46px;
   width: 220px;
   height: 220px;
   transform: translateX(-50%);
@@ -136,7 +175,7 @@
   top: -14px;
   width: 520px;
   height: min(82vh, 880px);
-  transform: translateX(-50%) translateY(10px);
+  transform: translateX(-50%) translateY(10px) scaleX(var(--gallery-beam-scale-x, 1));
   background: linear-gradient(
     to bottom,
     rgba(227, 226, 226, 0.24) 0%,
@@ -150,13 +189,13 @@
   mix-blend-mode: normal;
   opacity: 0.62;
   animation: spotlightPulseBeam 6.2s ease-in-out infinite 0.4s;
+  /* transform omitted so scaleX(--gallery-beam-scale-x) tracks scroll without transition lag */
   transition:
     width 0.35s var(--ease),
     height 0.35s var(--ease),
     opacity 0.35s var(--ease),
     top 0.35s var(--ease),
-    filter 0.35s var(--ease),
-    transform 0.35s var(--ease);
+    filter 0.35s var(--ease);
 }
 
 .page:has(.centerFrame:hover) .spotTop {
@@ -173,11 +212,11 @@
   top: -14px;
   opacity: 0.82;
   filter: blur(14px);
-  transform: translateX(-50%) translateY(14px);
+  transform: translateX(-50%) translateY(14px) scaleX(var(--gallery-beam-scale-x, 1));
   animation: none;
 }
 
-/* Side frames — parallax depth */
+/* Side frames — asymmetric parallax + depth (L/R read differently) */
 .sideFrame {
   position: absolute;
   top: 0;
@@ -186,8 +225,13 @@
   overflow: hidden;
   cursor: none;
   z-index: 0;
-  transform: translate3d(calc(var(--tilt-x) * -10px), calc(var(--tilt-y) * 6px), 0);
   transition: transform 0.35s var(--ease);
+}
+.sideLeft {
+  transform: translate3d(calc(var(--tilt-x) * 18px), calc(var(--tilt-y) * 5px), 0) scale(0.965);
+}
+.sideRight {
+  transform: translate3d(calc(var(--tilt-x) * -18px), calc(var(--tilt-y) * 5px), 0) scale(0.965);
 }
 .sideImg {
   width: 100%;
@@ -198,8 +242,18 @@
   transition: filter 0.4s, transform 0.5s var(--ease);
   transform: scale(0.96);
 }
-.sideFrame:hover .sideImg {
-  filter: brightness(0.4) blur(1px);
+.sideLeft .sideImg {
+  filter: brightness(0.2) blur(2.8px);
+}
+.sideRight .sideImg {
+  filter: brightness(0.3) blur(1.4px);
+}
+.sideLeft:hover .sideImg {
+  filter: brightness(0.42) blur(1.1px);
+  transform: scale(0.98);
+}
+.sideRight:hover .sideImg {
+  filter: brightness(0.5) blur(0.75px);
   transform: scale(0.98);
 }
 .sideFade {
@@ -225,7 +279,17 @@
   cursor: none;
   overflow: visible;
   transform-style: preserve-3d;
-  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .centerMotion {
+    will-change: transform, opacity;
+  }
+}
+
+@keyframes frameRimPulse {
+  0%, 100% { opacity: 0.38; }
+  50% { opacity: 0.72; }
 }
 
 @keyframes spotlightPulseTop {
@@ -268,6 +332,29 @@
     calc(var(--tilt-x, 0) * -44px) calc(62px + var(--tilt-y, 0) * 24px) 130px rgba(0, 0, 0, 0.9),
     calc(var(--tilt-x, 0) * -18px) calc(26px + var(--tilt-y, 0) * 11px) 56px rgba(0, 0, 0, 0.65),
     0 0 56px rgba(227, 226, 226, 0.08);
+}
+
+/* Top-edge rim light — same 5.5s cadence as spotlightPulseTop */
+.centerFrame::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(
+    185deg,
+    rgba(255, 255, 255, 0.18) 0%,
+    rgba(255, 255, 255, 0.05) 20%,
+    transparent 50%
+  );
+  mix-blend-mode: soft-light;
+  opacity: 0.55;
+  animation: frameRimPulse 5.5s ease-in-out infinite;
+}
+
+.centerFrame:hover::after {
+  opacity: 0.88;
+  animation: none;
 }
 
 .centerImg {
@@ -317,6 +404,8 @@
 
 /* Nav buttons */
 .navBtns {
+  position: relative;
+  z-index: 3;
   display: flex;
   justify-content: flex-end;
   gap: 8px;
@@ -342,6 +431,8 @@
 
 /* Footer */
 .footer {
+  position: relative;
+  z-index: 3;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -368,10 +459,6 @@
 .footerLink:hover { color: var(--white); }
 
 @media (max-width: 768px) {
-  .page {
-    /* Taller category row when filters wrap */
-    --gallery-spotlight-top: calc(var(--nav-height) + 116px);
-  }
   .centerWrap {
     width: min(78vw, 380px);
     max-width: 380px;
@@ -386,7 +473,7 @@
     width: 360px;
     height: min(76vh, 700px);
     top: -12px;
-    transform: translateX(-50%) translateY(8px);
+    transform: translateX(-50%) translateY(8px) scaleX(var(--gallery-beam-scale-x, 1));
   }
   .centerFrame { height: min(48vh, 480px); }
   .sideFrame { width: 10%; }
@@ -401,5 +488,41 @@
     flex-wrap: wrap;
     justify-content: flex-start;
   }
-  .grain { opacity: 0.04; }
+  .grain {
+    opacity: calc(0.04 + 0.02 * (1 - var(--gallery-stage-visibility, 1)));
+  }
+}
+
+/* Respect OS motion preference: stop ambient loops, shorten transitions, ease GPU filters */
+@media (prefers-reduced-motion: reduce) {
+  .cursorLight {
+    display: none !important;
+  }
+  .grain {
+    animation: none;
+  }
+  .spotTop,
+  .spotBeam {
+    animation: none;
+  }
+  .centerFrame::after {
+    animation: none;
+  }
+  .centerFrame,
+  .centerImg,
+  .sideFrame,
+  .sideImg,
+  .spotTop,
+  .spotBeam {
+    transition-duration: 0.01ms !important;
+  }
+  .filterBtn::after {
+    transition-duration: 0.01ms !important;
+  }
+  .sideLeft .sideImg {
+    filter: brightness(0.22) blur(1px);
+  }
+  .sideRight .sideImg {
+    filter: brightness(0.28) blur(0.5px);
+  }
 }
