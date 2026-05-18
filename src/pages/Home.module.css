@@ -83,17 +83,62 @@
   box-sizing: border-box;
 }
 
+/* Deck slides 2–4 (Statement, Series, About): abstract black photo */
+.pageDeck .deckSlideInnerQuote,
+.pageDeck .deckSlideInnerScroll:not(.deckSlideInnerClosing):not(.deckSlideInnerVision),
+.pageDeck .deckSlideInnerVision {
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  background-color: #060606;
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.22), rgba(0, 0, 0, 0.22)),
+    url('../assets/mysterious-background-abstract-black-photo.jpg');
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center center;
+}
+
 .pageDeck .deckSlideInnerQuote {
   padding-top: var(--deck-safe-top);
   padding-left: 0;
   padding-right: clamp(36px, 5vw, 52px);
-  box-sizing: border-box;
+}
+
+.pageDeck .deckSlideInnerQuote::before,
+.pageDeck
+  .deckSlideInnerScroll:not(.deckSlideInnerClosing):not(
+    .deckSlideInnerVision
+  )::before,
+.pageDeck .deckSlideInnerVision::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0.42)),
+    radial-gradient(
+      ellipse 95% 90% at 50% 45%,
+      rgba(0, 0, 0, 0.32) 0%,
+      rgba(0, 0, 0, 0.8) 100%
+    );
+}
+
+.pageDeck .deckSlideInnerQuote > *,
+.pageDeck
+  .deckSlideInnerScroll:not(.deckSlideInnerClosing):not(
+    .deckSlideInnerVision
+  )
+  > *,
+.pageDeck .deckSlideInnerVision > * {
+  position: relative;
+  z-index: 1;
 }
 
 .pageDeck .deckSlideInnerScroll:not(.deckSlideInnerClosing):not(.deckSlideInnerVision) {
   padding-top: var(--deck-safe-top);
   padding-right: clamp(36px, 5vw, 52px);
-  box-sizing: border-box;
 }
 
 /* Last slide: newsletter under nav; footer pinned to viewport bottom */
@@ -143,6 +188,16 @@
   padding-top: clamp(12px, 2vh, 28px);
   padding-bottom: clamp(24px, 4vh, 48px);
   min-height: min-content;
+}
+
+.pageDeck .quoteSection blockquote {
+  color: rgba(232, 230, 227, 0.88);
+  text-shadow: 0 1px 24px rgba(0, 0, 0, 0.65);
+}
+
+.pageDeck .quoteSection cite {
+  color: rgba(245, 245, 244, 0.55);
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.5);
 }
 
 .pageDeck .quoteSection {

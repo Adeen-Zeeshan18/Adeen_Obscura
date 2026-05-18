@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import styles from '../Gallery.module.css'
 import { collections, categories } from '../../data/collections'
-import Lightbox from '../../components/Lightbox'
+import ImgPreview from '../../components/imgPreview'
 import { useGalleryReducedMotion } from './useGalleryReducedMotion'
 import { useGalleryViewportSync } from './useGalleryViewportSync'
 import { useGalleryCursorLight } from './useGalleryCursorLight'
@@ -16,7 +16,7 @@ import GalleryFooter from './GalleryFooter'
 export default function Gallery() {
   const [current, setCurrent] = useState(0)
   const [activeCategory, setActiveCategory] = useState('All')
-  const [lightbox, setLightbox] = useState(null)
+  const [imgPreview, setImgPreview] = useState(null)
   const reducedMotion = useGalleryReducedMotion()
 
   const motionRef = useRef(null)
@@ -93,18 +93,21 @@ export default function Gallery() {
         current={current}
         onPrev={() => go(-1)}
         onNext={() => go(1)}
-        onOpenLightbox={() => setLightbox({ collection: col, startIndex: 0 })}
+        onOpenImgPreview={() =>
+          setImgPreview({ collection: col, startIndex: 0, seriesIndex: current })
+        }
       />
 
       <GalleryNavButtons onPrev={() => go(-1)} onNext={() => go(1)} />
 
       <GalleryFooter />
 
-      {lightbox && (
-        <Lightbox
-          collection={lightbox.collection}
-          startIndex={0}
-          onClose={() => setLightbox(null)}
+      {imgPreview && (
+        <ImgPreview
+          collection={imgPreview.collection}
+          startIndex={imgPreview.startIndex ?? 0}
+          seriesIndex={imgPreview.seriesIndex ?? 0}
+          onClose={() => setImgPreview(null)}
         />
       )}
     </main>

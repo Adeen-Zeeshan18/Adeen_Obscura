@@ -11,7 +11,7 @@ export default function GalleryStage({
   current,
   onPrev,
   onNext,
-  onOpenLightbox,
+  onOpenImgPreview,
 }) {
   return (
     <div
@@ -47,7 +47,7 @@ export default function GalleryStage({
         <div
           ref={motionRef}
           className={styles.centerMotion}
-          onClick={() => onOpenLightbox()}
+          onClick={() => onOpenImgPreview()}
         >
           <div className={styles.centerFrame} data-hover>
             <img
