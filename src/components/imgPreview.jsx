@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import styles from './imgPreview.module.css'
 
 function formatExposure(exif) {
@@ -22,9 +22,21 @@ function buildRefId(collection, img) {
   return `${series}-${item}-ARCH-${img.year || collection.year || '2024'}`
 }
 
-export default function ImgPreview({ collection, startIndex = 0, onClose, seriesIndex = 0 }) {
+const FOCUSABLE = 'a[href], button:not([disabled]), input, textarea, [tabindex]:not([tabindex="-1"])'
+
+export default function ImgPreview({ collection, startIndex = 0, onClose, seriesIndex = 0, onIndexChange }) {
   const [current, setCurrent] = useState(startIndex)
   const [loaded, setLoaded] = useState(false)
+  const containerRef = useRef(null)
+
+  // Held in a ref so an inline callback from the parent can't re-trigger the
+  // effect on every render.
+  const onIndexChangeRef = useRef(onIndexChange)
+  useEffect(() => { onIndexChangeRef.current = onIndexChange })
+
+  useEffect(() => {
+    onIndexChangeRef.current?.(current)
+  }, [current])
 
   const images = collection.images
   const img = images[current]
@@ -61,6 +73,27 @@ export default function ImgPreview({ collection, startIndex = 0, onClose, series
     return () => { document.body.style.overflow = '' }
   }, [])
 
+  // Focus trap — keep focus inside the dialog while it is open
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const first = el.querySelector(FOCUSABLE)
+    first?.focus()
+    const onKeyDown = (e) => {
+      if (e.key !== 'Tab') return
+      const focusable = Array.from(el.querySelectorAll(FOCUSABLE))
+      const firstEl = focusable[0]
+      const lastEl = focusable[focusable.length - 1]
+      if (e.shiftKey) {
+        if (document.activeElement === firstEl) { e.preventDefault(); lastEl?.focus() }
+      } else {
+        if (document.activeElement === lastEl) { e.preventDefault(); firstEl?.focus() }
+      }
+    }
+    el.addEventListener('keydown', onKeyDown)
+    return () => el.removeEventListener('keydown', onKeyDown)
+  }, [])
+
   const seriesNum = String(seriesIndex + 1).padStart(2, '0')
   const archiveNum = String(img.id ?? current + 1).padStart(3, '0')
   const displayTitle = img.caption?.toUpperCase() || 'UNTITLED'
@@ -81,10 +114,25 @@ export default function ImgPreview({ collection, startIndex = 0, onClose, series
   const accessNum = String(sectionOffset + (collection.description ? 1 : 0) + 2).padStart(2, '0')
 
   return (
-    <div className={styles.backdrop} role="dialog" aria-modal="true" aria-label={displayTitle}>
-      <div className={styles.layout} onClick={(e) => e.stopPropagation()}>
+    <div className={styles.backdrop} role="dialog" aria-modal="true" aria-label={displayTitle} aria-describedby="img-preview-desc">
+      <div ref={containerRef} className={styles.layout} onClick={(e) => e.stopPropagation()}>
+        <p id="img-preview-desc" className="sr-only">
+          {collection.title} — image {current + 1} of {images.length}. Use arrow keys to navigate, Escape to close.
+        </p>
 
         <section className={styles.stage} aria-label="Image viewer">
+          <button
+            type="button"
+            className={styles.backButton}
+            onClick={onClose}
+            aria-label="Back to gallery"
+            data-hover
+          >
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden>
+              <path d="M12.5 4L6.5 10L12.5 16" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+
           <div className={styles.stageInner}>
             <button
               type="button"
@@ -105,6 +153,8 @@ export default function ImgPreview({ collection, startIndex = 0, onClose, series
                 alt={img.caption}
                 className={`${styles.image} ${loaded ? styles.imageVisible : ''}`}
                 onLoad={() => setLoaded(true)}
+                decoding="async"
+                fetchpriority="high"
               />
             </div>
 
@@ -203,7 +253,7 @@ export default function ImgPreview({ collection, startIndex = 0, onClose, series
                     aria-current={i === current ? 'true' : undefined}
                     data-hover
                   >
-                    <img src={thumb.src} alt="" />
+                    <img src={thumb.src} alt="" loading="lazy" decoding="async" />
                     <span className={styles.thumbIndex}>
                       {String(i + 1).padStart(2, '0')}
                     </span>
@@ -234,16 +284,27 @@ export default function ImgPreview({ collection, startIndex = 0, onClose, series
           </div>
 
           <footer className={styles.sidebarFooter}>
-            <button type="button" className={styles.footerLink} data-hover>Privacy</button>
-            <button type="button" className={styles.footerLink} data-hover>Terms</button>
-            <a
-              href="https://instagram.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className={styles.footerLink}
+            <div className={styles.footerLinks}>
+              <button type="button" className={styles.footerLink} data-hover>Privacy</button>
+              <button type="button" className={styles.footerLink} data-hover>Terms</button>
+              <a
+                href="https://instagram.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.footerLink}
+              >
+                Instagram
+              </a>
+            </div>
+            <button
+              type="button"
+              className={styles.closeMobile}
+              onClick={onClose}
+              aria-label="Close viewer"
+              data-hover
             >
-              Instagram
-            </a>
+              Close
+            </button>
           </footer>
         </aside>
       </div>

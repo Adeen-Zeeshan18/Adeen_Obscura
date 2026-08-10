@@ -1,3 +1,4 @@
+/* ── Base nav bar ──────────────────────────────────────────────── */
 .nav {
   position: fixed; top: 0; left: 0; right: 0;
   z-index: 100;
@@ -6,7 +7,14 @@
   border-bottom: 1px solid transparent;
 }
 .scrolled {
-  background: rgba(10,10,10,0.94);
+  background: rgba(10, 10, 10, 0.94);
+  backdrop-filter: blur(14px);
+  border-bottom-color: var(--border);
+}
+
+/* When deck has advanced past the hero slide, darken nav regardless of scroll */
+:global(.deck-past-hero) .nav {
+  background: rgba(10, 10, 10, 0.94);
   backdrop-filter: blur(14px);
   border-bottom-color: var(--border);
 }
@@ -18,10 +26,12 @@
   align-items: center;
   gap: 24px;
 }
-.inner .logo { justify-self: start; }
-.inner .links { justify-self: center; }
+.inner .logo     { justify-self: start; }
+.inner .links    { justify-self: center; }
 .inner .contactBtn { justify-self: end; }
-.inner .burger { justify-self: end; }
+.inner .burger   { justify-self: end; }
+
+/* ── Logo ───────────────────────────────────────────────────────── */
 .logo {
   background: none; border: none; cursor: none;
   font-family: var(--font-serif);
@@ -29,6 +39,8 @@
   letter-spacing: 0.3em; color: var(--white);
   text-transform: uppercase;
 }
+
+/* ── Desktop links ──────────────────────────────────────────────── */
 .links { list-style: none; display: flex; gap: 36px; align-items: center; }
 .link {
   background: none; border: none; cursor: none;
@@ -46,6 +58,8 @@
 .link:hover, .link.active { color: var(--white); }
 .link:hover::after, .link.active::after { width: 100%; }
 .linkNum { color: var(--white-faint); font-size: 10px; }
+
+/* ── Inquiry button (desktop) ──────────────────────────────────── */
 .contactBtn {
   background: none;
   border: 1px solid var(--border-hover);
@@ -57,12 +71,28 @@
 }
 .contactBtn:hover { background: var(--white); color: var(--black); border-color: var(--white); }
 
-.burger { display: none; flex-direction: column; gap: 5px; background: none; border: none; cursor: none; }
-.burger span { display: block; width: 22px; height: 1px; background: var(--white); transition: transform 0.3s, opacity 0.3s; }
+/* ── Burger (hidden on desktop) ────────────────────────────────── */
+.burger {
+  display: none; flex-direction: column; gap: 5px;
+  background: none; border: none; cursor: none;
+  padding: 4px;
+}
+.burger span {
+  display: block; width: 22px; height: 1px;
+  background: var(--white);
+  transition: transform 0.35s var(--ease), opacity 0.25s;
+}
 .burgerOpen span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
 .burgerOpen span:nth-child(2) { opacity: 0; }
 .burgerOpen span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
 
+/* ── Mobile drawer panel (hidden on desktop) ───────────────────── */
+.panel  { display: none; }
+.backdrop { display: none; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   Mobile — 768px and below
+   ═══════════════════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
   .inner {
     padding: 0 24px;
@@ -73,14 +103,194 @@
   }
   .inner .logo,
   .inner .burger { justify-self: unset; }
-  .burger { display: flex; }
-  .links {
-    position: fixed; top: var(--nav-height); left: 0; right: 0; bottom: 0;
-    background: var(--black); flex-direction: column; justify-content: center;
-    align-items: center; gap: 32px; opacity: 0; pointer-events: none;
-    transition: opacity 0.3s;
-  }
-  .links.open { opacity: 1; pointer-events: all; }
-  .link { font-size: 18px; }
+
+  /* Hide desktop-only elements */
+  .links    { display: none !important; }
   .contactBtn { display: none; }
+
+  /* Show burger */
+  .burger { display: flex; }
+
+  /* ── Backdrop ────────────────────────────────────────────────── */
+  .backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 98;
+    background: rgba(0, 0, 0, 0.52);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    animation: backdropIn 0.3s ease forwards;
+  }
+
+  @keyframes backdropIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  /* ── Drawer panel ────────────────────────────────────────────── */
+  .panel {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(78vw, 288px);
+    background: rgba(6, 6, 6, 0.97);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    border-left: 1px solid rgba(255, 255, 255, 0.06);
+    z-index: 99;
+    padding: calc(var(--nav-height) + 28px) 32px 36px;
+    transform: translateX(105%);
+    transition: transform 0.5s cubic-bezier(0.76, 0, 0.24, 1);
+    pointer-events: none;
+    will-change: transform;
+  }
+
+  .panelOpen {
+    transform: translateX(0);
+    pointer-events: all;
+  }
+
+  /* ── Panel top (brand + rule) ────────────────────────────────── */
+  .panelTop {
+    margin-bottom: 36px;
+  }
+
+  .panelBrand {
+    display: block;
+    font-family: var(--font-serif);
+    font-size: 12px;
+    font-style: italic;
+    letter-spacing: 0.28em;
+    color: rgba(255, 255, 255, 0.28);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .panelRule {
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    margin: 0;
+  }
+
+  /* ── Panel nav links ─────────────────────────────────────────── */
+  .panelNav {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0;
+  }
+
+  .panelLink {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: none;
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.055);
+    border-left: 2px solid transparent;
+    padding: 17px 0 17px 14px;
+    width: 100%;
+    cursor: pointer;
+    text-align: left;
+    position: relative;
+    /* staggered slide-in — driven by --i */
+    opacity: 0;
+    transform: translateX(18px);
+    transition:
+      opacity  0.34s ease calc(var(--i, 0) * 0.065s + 0.18s),
+      transform 0.34s ease calc(var(--i, 0) * 0.065s + 0.18s),
+      border-left-color 0.2s;
+  }
+
+  .panelOpen .panelLink {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .panelLink:hover .panelLabel {
+    color: var(--white);
+  }
+
+  /* Active: left accent bar */
+  .panelActive {
+    border-left-color: rgba(255, 255, 255, 0.7);
+  }
+
+  .panelActive .panelNum {
+    color: rgba(255, 255, 255, 0.55);
+  }
+
+  .panelActive .panelLabel {
+    color: var(--white);
+  }
+
+  .panelNum {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.22em;
+    color: rgba(255, 255, 255, 0.22);
+    min-width: 18px;
+    transition: color 0.2s;
+  }
+
+  .panelLabel {
+    font-family: var(--font-sans);
+    font-size: 12px;
+    letter-spacing: 0.26em;
+    color: rgba(255, 255, 255, 0.52);
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+
+  /* ── Panel bottom (rule + inquiry CTA) ──────────────────────── */
+  .panelBottom {
+    margin-top: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    /* stagger after last link */
+    opacity: 0;
+    transform: translateX(18px);
+    transition:
+      opacity  0.34s ease calc(4 * 0.065s + 0.18s),
+      transform 0.34s ease calc(4 * 0.065s + 0.18s);
+  }
+
+  .panelOpen .panelBottom {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .panelInquiry {
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: rgba(255, 255, 255, 0.5);
+    font-family: var(--font-sans);
+    font-size: 9px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    padding: 13px 0;
+    width: 100%;
+    cursor: pointer;
+    transition: background 0.3s, color 0.3s, border-color 0.3s;
+  }
+
+  .panelInquiry:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--white);
+    border-color: rgba(255, 255, 255, 0.35);
+  }
+}
+
+/* Reduced motion: disable panel slide and link stagger */
+@media (prefers-reduced-motion: reduce) {
+  .panel     { transition-duration: 0.01ms !important; }
+  .panelLink { transition-duration: 0.01ms !important; }
+  .panelBottom { transition-duration: 0.01ms !important; }
+  .backdrop  { animation: none; }
 }

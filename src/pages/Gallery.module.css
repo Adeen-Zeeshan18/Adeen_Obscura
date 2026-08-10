@@ -82,6 +82,21 @@
   mix-blend-mode: soft-light;
 }
 
+/* The image viewer covers the whole viewport, so every ambient layer below it
+   is invisible but still compositing — blend modes and blurred beams included.
+   Drop them while it is open. */
+.previewOpen .grain,
+.previewOpen .vignette,
+.previewOpen .cursorLight,
+.previewOpen .headerSpotlight,
+.previewOpen .galleryRig {
+  display: none;
+}
+
+.previewOpen .centerFrame::after {
+  animation: none;
+}
+
 /* Filter bar — solid band + high z so labels always paint above the fixed beam */
 .filterBar {
   position: relative;
@@ -137,11 +152,12 @@
   overflow: hidden;
 }
 
-/* Streetlight: fixed just below category bar (not under main nav); z below filter + stage */
+/* Streetlight anchor — offset down so beam apex aligns with the lamp lens (49px below rig bar)
+   + 4px for spotBeam's translateY(10px) - top(-14px) = +4px, giving 53px total */
 .headerSpotlight {
   position: fixed;
   left: 50%;
-  top: var(--gallery-spotlight-top);
+  top: calc(var(--gallery-spotlight-top, calc(var(--nav-height) + 96px)) + 53px);
   transform: translateX(-50%);
   z-index: 0;
   width: 0;
@@ -297,9 +313,10 @@
   50% { opacity: 0.88; transform: translateX(-50%) scale(1.04); }
 }
 
+/* Opacity only — animating blur() on a 520x880 layer repaints it every frame */
 @keyframes spotlightPulseBeam {
-  0%, 100% { opacity: 0.58; filter: blur(12px); }
-  50% { opacity: 0.76; filter: blur(15px); }
+  0%, 100% { opacity: 0.58; }
+  50% { opacity: 0.76; }
 }
 
 .centerFrame {
@@ -407,8 +424,9 @@
   position: relative;
   z-index: 3;
   display: flex;
+  align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 0;
   padding: 0 60px 28px;
   flex-shrink: 0;
 }
@@ -427,6 +445,35 @@
 .navBtn:hover {
   border-color: var(--white);
   color: var(--white);
+}
+.navCounter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 18px;
+  border-top: 1px solid var(--border-hover);
+  border-bottom: 1px solid var(--border-hover);
+  height: 44px;
+  min-width: 72px;
+  justify-content: center;
+}
+.navCounterCurrent {
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--white);
+  font-variant-numeric: tabular-nums;
+}
+.navCounterSep {
+  font-size: 10px;
+  color: var(--white-faint);
+  margin: 0 1px;
+}
+.navCounterTotal {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--white-faint);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Footer */
@@ -486,11 +533,156 @@
   .filterBar {
     padding: 20px 24px 0;
     flex-wrap: wrap;
-    justify-content: flex-start;
+    justify-content: center;
+  }
+  .navBtns {
+    justify-content: center;
   }
   .grain {
     opacity: calc(0.04 + 0.02 * (1 - var(--gallery-stage-visibility, 1)));
   }
+}
+
+/* ── Gallery stage lighting rig ──────────────────────────────────── */
+
+/* Truss rail + 3 lamp fixtures anchored at the spotlight origin line.
+   z-index: 5 so the rail is visible at the filter-bar / stage boundary. */
+.galleryRig {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: var(--gallery-spotlight-top, calc(var(--nav-height) + 96px));
+  pointer-events: none;
+  z-index: 5;
+  animation: galleryRigFadeIn 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.4s both;
+}
+
+@keyframes galleryRigFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Horizontal truss — two rails with diagonal lattice bracing */
+.galleryRigBar {
+  position: absolute;
+  top: 0;
+  left: 6%;
+  right: 6%;
+  height: 2px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(88, 88, 88, 0.52) 5%,
+    rgba(108, 108, 108, 0.58) 50%,
+    rgba(88, 88, 88, 0.52) 95%,
+    transparent
+  );
+}
+
+.galleryRigBar::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 8px;
+  height: 1px;
+  background: rgba(65, 65, 65, 0.38);
+}
+
+.galleryRigBar::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: -8px;
+  background: repeating-linear-gradient(
+    68deg,
+    transparent          0px,
+    transparent          18px,
+    rgba(58, 58, 58, 0.32) 18px,
+    rgba(58, 58, 58, 0.32) 19px,
+    transparent          19px,
+    transparent          26px
+  );
+}
+
+/* Individual lamp — positioned by inline left + --lamp-scale */
+.galleryLamp {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Side lamps fade to match dimmed side images */
+.galleryRig .galleryLamp:nth-child(2),
+.galleryRig .galleryLamp:nth-child(4) {
+  opacity: 0.28;
+}
+
+/* Thin light shaft connecting center lamp lens to the spotlight beam below */
+.galleryRig .galleryLamp:nth-child(3) .galleryLampLens::after {
+  content: '';
+  position: absolute;
+  bottom: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1px;
+  height: 22px;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.38),
+    transparent
+  );
+}
+
+/* Thin mounting arm from truss to housing */
+.galleryLampArm {
+  width: 2px;
+  height: calc(14px * var(--lamp-scale, 1));
+  margin-top: 4px;
+  background: linear-gradient(
+    to bottom,
+    rgba(92, 92, 92, 0.8),
+    rgba(55, 55, 55, 0.55)
+  );
+}
+
+/* Trapezoidal PAR can body */
+.galleryLampBody {
+  width:  calc(18px * var(--lamp-scale, 1));
+  height: calc(24px * var(--lamp-scale, 1));
+  background: linear-gradient(155deg, #2a2a2a 0%, #1a1a1a 55%, #0e0e0e 100%);
+  clip-path: polygon(14% 0%, 86% 0%, 100% 100%, 0% 100%);
+  border-top: 1px solid rgba(92, 92, 92, 0.42);
+}
+
+/* Glowing lens aperture */
+.galleryLampLens {
+  position: relative;
+  width:  calc(22px * var(--lamp-scale, 1));
+  height: calc(7px  * var(--lamp-scale, 1));
+  border-radius: 0 0 5px 5px;
+  background: radial-gradient(
+    ellipse 100% 100% at 50% 0%,
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(215, 215, 215, 0.55) 45%,
+    rgba(175, 175, 175, 0.12) 80%,
+    transparent               100%
+  );
+}
+
+/* Extra-small phones: shrink spotlight further, hide side lamps */
+@media (max-width: 480px) {
+  .spotTop  { width: 110px; height: 110px; top: -32px; }
+  .spotBeam { width: 240px; }
+  .filterBar { gap: 0; }
+  .navBtns  { padding-bottom: 20px; }
+  .galleryRig .galleryLamp:nth-child(2),
+  .galleryRig .galleryLamp:nth-child(4) { display: none; }
 }
 
 /* Respect OS motion preference: stop ambient loops, shorten transitions, ease GPU filters */
@@ -524,5 +716,8 @@
   }
   .sideRight .sideImg {
     filter: brightness(0.28) blur(0.5px);
+  }
+  .galleryRig {
+    animation: none;
   }
 }

@@ -2,18 +2,22 @@
   position: fixed;
   inset: 0;
   z-index: 1000;
-  background: #000;
+  background: var(--home-bg, #000);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 1.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.6s ease;
   overflow: hidden;
+  transition:
+    background 1.8s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    opacity    0.65s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
+/* Very subtle lift — stays close to black so beams read clearly */
 .lightsup {
-  background: #0e0b08;
+  background: #080808;
 }
 
+/* CSS wraps everything to opacity:0 — GSAP has already faded the children */
 .out {
   opacity: 0;
   pointer-events: none;
@@ -25,61 +29,51 @@
   inset: -50%;
   width: 200%;
   height: 200%;
-  opacity: 0.03;
+  opacity: 0.025;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  pointer-events: none;
+  animation: drift 10s linear infinite;
+}
+
+@keyframes drift {
+  from { transform: translate(0, 0); }
+  to   { transform: translate(-8%, -8%); }
+}
+
+/* CRT scan line — GSAP animates y and opacity */
+.scan {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(227, 226, 226, 0.55) 20%,
+    rgba(227, 226, 226, 0.55) 80%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Ambient radial glow — appears with beams */
+.glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 65% 55% at 50% 44%,
+    rgba(227, 226, 226, 0.055) 0%,
+    rgba(227, 226, 226, 0.02) 40%,
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   pointer-events: none;
 }
 
-/* Logo */
-.logo {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 14px;
-  opacity: 0;
-  transform: translateY(10px);
-  transition: opacity 1s ease, transform 1s ease;
-  z-index: 2;
-  position: relative;
-}
-
-.logoVisible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.logoLine {
-  width: 48px;
-  height: 1px;
-  background: rgba(201, 169, 110, 0.5);
-}
-
-.logoText {
-  font-family: 'DM Mono', monospace;
-  font-size: 22px;
-  letter-spacing: 0.55em;
-  color: #f5f0eb;
-  text-transform: uppercase;
-}
-
-.logoDot {
-  font-size: 7px;
-  color: #c9a96e;
-  animation: pulse 2s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.2; }
-}
-
-.logoSub {
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  font-style: italic;
-  font-size: 15px;
-  color: rgba(245, 240, 235, 0.35);
-  letter-spacing: 0.1em;
-}
+.glowOn { opacity: 1; }
 
 /* Spotlight beams */
 .beams {
@@ -97,9 +91,9 @@
   height: 0;
   opacity: 0;
   transition:
-    opacity 1s ease calc(var(--i) * 0.15s),
-    width 1s ease calc(var(--i) * 0.15s),
-    height 1s ease calc(var(--i) * 0.15s);
+    opacity 1.1s cubic-bezier(0.25, 0.46, 0.45, 0.94) calc(var(--i) * 0.12s),
+    width   1.1s cubic-bezier(0.25, 0.46, 0.45, 0.94) calc(var(--i) * 0.12s),
+    height  1.1s cubic-bezier(0.25, 0.46, 0.45, 0.94) calc(var(--i) * 0.12s);
 }
 
 .beamsOn .beam {
@@ -109,9 +103,229 @@
   clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
   background: linear-gradient(
     to bottom,
-    rgba(255, 235, 150, 0.12) 0%,
-    rgba(220, 175, 70, 0.05) 40%,
+    rgba(227, 226, 226, 0.16) 0%,
+    rgba(196, 199, 199, 0.07) 40%,
     transparent 80%
   );
   transform: translateX(-50%);
+}
+
+/* ── Stage lighting rig ─────────────────────────────────────── */
+
+.rig {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  pointer-events: none;
+  z-index: 3;
+  opacity: 0;
+  transition: opacity 1.0s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.25s;
+}
+
+.rigOn { opacity: 1; }
+
+/* Horizontal truss — two rails with diagonal lattice bracing */
+.rigBar {
+  position: absolute;
+  top: 10px;
+  left: 2%;
+  right: 2%;
+  height: 3px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(105, 105, 105, 0.75) 5%,
+    rgba(125, 125, 125, 0.8)  50%,
+    rgba(105, 105, 105, 0.75) 95%,
+    transparent
+  );
+}
+
+/* Lower truss rail */
+.rigBar::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 9px;
+  height: 2px;
+  background: rgba(80, 80, 80, 0.55);
+}
+
+/* Diagonal lattice bracing between the two rails */
+.rigBar::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: -9px;
+  background: repeating-linear-gradient(
+    68deg,
+    transparent          0px,
+    transparent          15px,
+    rgba(70, 70, 70, 0.45) 15px,
+    rgba(70, 70, 70, 0.45) 16px,
+    transparent          16px,
+    transparent          22px
+  );
+}
+
+/* Individual lamp — centered on same origin as the corresponding beam */
+.lamp {
+  position: absolute;
+  top: 0;
+  left: calc(10% + var(--i) * 20%);
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Thin mounting arm dropping from the truss to the housing */
+.lampArm {
+  width: 2px;
+  height: 16px;
+  margin-top: 5px;
+  background: linear-gradient(
+    to bottom,
+    rgba(95, 95, 95, 0.85),
+    rgba(60, 60, 60, 0.6)
+  );
+}
+
+/* Dark canister body — slight trapezoid (wider at bottom like a PAR can) */
+.lampBody {
+  width: 18px;
+  height: 28px;
+  background: linear-gradient(155deg, #2e2e2e 0%, #1c1c1c 55%, #101010 100%);
+  clip-path: polygon(14% 0%, 86% 0%, 100% 100%, 0% 100%);
+  border-top: 1px solid rgba(95, 95, 95, 0.55);
+}
+
+/* Glowing lens aperture at the bottom of the housing */
+.lampLens {
+  width: 22px;
+  height: 7px;
+  border-radius: 0 0 5px 5px;
+  background: radial-gradient(
+    ellipse 100% 100% at 50% 0%,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(220, 220, 220, 0.6)  45%,
+    rgba(180, 180, 180, 0.15) 80%,
+    transparent               100%
+  );
+}
+
+/* Soft halo bloom below each lens — fades in slightly after the rig appears */
+.lampHalo {
+  width: 52px;
+  height: 26px;
+  margin-top: 1px;
+  background: radial-gradient(
+    ellipse 100% 100% at 50% 0%,
+    rgba(227, 226, 226, 0.2)  0%,
+    rgba(227, 226, 226, 0.07) 45%,
+    transparent               72%
+  );
+  opacity: 0;
+  transition: opacity 0.9s ease 0.7s;
+}
+
+.rigOn .lampHalo { opacity: 1; }
+
+/* ── Logo container ──────────────────────────────────────────── */
+
+/* Logo container — opacity managed by GSAP (full-motion) or .logoVisible (reduced-motion) */
+.logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  opacity: 0;
+  z-index: 2;
+  position: relative;
+  transition: opacity 0.6s ease;  /* reduced-motion fallback only */
+}
+
+.logoVisible { opacity: 1; }
+
+/* Accent lines — transform-origin: center so scaleX grows from center outward */
+.logoLine {
+  width: 40px;
+  height: 1px;
+  background: rgba(227, 226, 226, 0.2);
+  transform-origin: center;
+}
+
+/* OBSCURA split into individual letter spans for GSAP stagger */
+.logoWordmark {
+  display: flex;
+  align-items: center;
+}
+
+.logoLetter {
+  font-family: 'DM Mono', monospace;
+  font-size: 22px;
+  letter-spacing: 0.55em;
+  color: var(--home-text, #f5f5f4);
+  display: inline-block;  /* required for GSAP 3-D transforms */
+}
+
+/* Remove trailing letter-spacing gap after the last letter */
+.logoLetter:last-child {
+  letter-spacing: 0;
+}
+
+/* Separator dot — pulsing handled by GSAP after spring-in */
+.logoDot {
+  font-size: 7px;
+  color: var(--gold, #c9c6c5);
+}
+
+/* Subtitle */
+.logoSub {
+  font-family: var(--font-serif, 'Noto Serif', Georgia, serif);
+  font-style: italic;
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  color: var(--home-muted, #a8a8a6);
+}
+
+/* Bottom status bar */
+.status {
+  position: absolute;
+  bottom: clamp(24px, 4vh, 48px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  white-space: nowrap;
+}
+
+.statusDash {
+  display: block;
+  width: 20px;
+  height: 1px;
+  background: rgba(227, 226, 226, 0.15);
+}
+
+.statusText {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.32em;
+  color: var(--home-faint, #6b6b69);
+  text-transform: uppercase;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .noise { animation: none; }
+  .scan  { display: none; }
+  .logo  { transition: opacity 0.4s ease; }
+  .glow  { transition: opacity 0.4s ease; }
+  .beam  { transition: opacity 0.4s ease; width: 280px; height: 100vh; }
+  .wrap  { transition: opacity 0.4s ease; }
 }

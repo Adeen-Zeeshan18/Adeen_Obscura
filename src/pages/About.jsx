@@ -1,4 +1,7 @@
+import { useRef } from 'react'
 import styles from './About.module.css'
+import { useMeta } from '../hooks/useMeta'
+import { useSectionReveal } from '../hooks/useSectionReveal'
 
 const exhibitions = [
   { year: '2024', title: 'Into the Void', venue: 'Foam Museum, Amsterdam' },
@@ -9,8 +12,23 @@ const exhibitions = [
 ]
 
 export default function About() {
+  useMeta('about')
+  const pageRef = useRef(null)
+  const exhibitionsRef = useRef(null)
+  const footerRef = useRef(null)
+
+  // Hero already has its own on-load fadeUp entrance (About.module.css) since
+  // it's always visible immediately — only scroll-reveal the below-the-fold
+  // sections, matching Home's pattern of not scroll-triggering its hero.
+  useSectionReveal(pageRef, [
+    { ref: exhibitionsRef, targets: `.${styles.exTitle}, .${styles.exItem}` },
+    // A short footer at the very end of the page has little scroll room past
+    // it, so the usual bottom-=12% margin can be mathematically unreachable.
+    { ref: footerRef, start: 'top bottom' },
+  ])
+
   return (
-    <main className={styles.page}>
+    <main ref={pageRef} className={styles.page}>
       <div className={styles.inner}>
 
         {/* Portrait + main text */}
@@ -55,13 +73,13 @@ export default function About() {
         </section>
 
         {/* Exhibitions */}
-        <section className={styles.exhibitions}>
+        <section ref={exhibitionsRef} className={styles.exhibitions}>
           <div className={styles.exLeft}>
             <h2 className={styles.exTitle}>Selected Exhibitions</h2>
           </div>
           <div className={styles.exList}>
             {exhibitions.map((ex, i) => (
-              <div key={i} className={styles.exItem} style={{ '--i': i }}>
+              <div key={i} className={styles.exItem}>
                 <span className={styles.exYear}>{ex.year}</span>
                 <span className={styles.exName}>{ex.title}</span>
                 <span className={styles.exVenue}>{ex.venue}</span>
@@ -73,7 +91,7 @@ export default function About() {
       </div>
 
       {/* Footer */}
-      <footer className={styles.footer}>
+      <footer ref={footerRef} className={styles.footer}>
         <span className={styles.footerCopy}>© 2024 OBSCURA ARCHIVE. ALL RIGHTS RESERVED.</span>
         <div className={styles.footerLinks}>
           {['INSTAGRAM','BEHANCE','FOUNDATION'].map(s => (

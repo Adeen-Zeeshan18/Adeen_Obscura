@@ -12,6 +12,8 @@ export default function GalleryStage({
   onPrev,
   onNext,
   onOpenImgPreview,
+  onCenterMouseDown,
+  isDragging,
 }) {
   return (
     <div
@@ -47,7 +49,8 @@ export default function GalleryStage({
         <div
           ref={motionRef}
           className={styles.centerMotion}
-          onClick={() => onOpenImgPreview()}
+          onMouseDown={onCenterMouseDown}
+          onClick={() => { if (!isDragging?.()) onOpenImgPreview() }}
         >
           <div className={styles.centerFrame} data-hover>
             <img
@@ -55,7 +58,7 @@ export default function GalleryStage({
               alt={col?.title}
               className={styles.centerImg}
               decoding="async"
-              fetchPriority="high"
+              fetchpriority="high"
             />
           </div>
 

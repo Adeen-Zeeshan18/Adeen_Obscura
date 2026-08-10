@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
+import Fuse from 'fuse.js'
 import { collections } from '../data/collections'
 import styles from './Search.module.css'
 
@@ -29,11 +30,20 @@ export default function Search({ onNavigate, onOpen }) {
     return [...items, ...pages]
   }, [onNavigate])
 
+  const fuse = useMemo(() => new Fuse(index, {
+    keys: [
+      { name: 'title',    weight: 0.6 },
+      { name: 'keywords', weight: 0.4 },
+    ],
+    threshold: 0.35,
+    includeScore: true,
+    minMatchCharLength: 2,
+  }), [index])
+
   const results = useMemo(() => {
     if (!query.trim()) return index.slice(0, 6)
-    const q = query.toLowerCase()
-    return index.filter(i => i.keywords.includes(q)).slice(0, 8)
-  }, [query, index])
+    return fuse.search(query).slice(0, 8).map(r => r.item)
+  }, [query, index, fuse])
 
   useEffect(() => { setSelected(0) }, [results])
 
@@ -74,6 +84,27 @@ export default function Search({ onNavigate, onOpen }) {
   // Expose open function to parent
   useEffect(() => { onOpen?.(() => setOpen(true)) }, [onOpen])
 
+  // Focus trap inside the search dialog
+  useEffect(() => {
+    if (!open) return
+    const modal = document.querySelector('[data-search-modal]')
+    if (!modal) return
+    const FOCUSABLE = 'a[href], button:not([disabled]), input, [tabindex]:not([tabindex="-1"])'
+    const onKeyDown = (e) => {
+      if (e.key !== 'Tab') return
+      const els = Array.from(modal.querySelectorAll(FOCUSABLE))
+      const first = els[0]
+      const last = els[els.length - 1]
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last?.focus() }
+      } else {
+        if (document.activeElement === last) { e.preventDefault(); first?.focus() }
+      }
+    }
+    modal.addEventListener('keydown', onKeyDown)
+    return () => modal.removeEventListener('keydown', onKeyDown)
+  }, [open])
+
   if (!open) return null
 
   const pick = (item) => {
@@ -84,8 +115,15 @@ export default function Search({ onNavigate, onOpen }) {
   }
 
   return (
-    <div className={styles.backdrop} onClick={() => setOpen(false)}>
-      <div className={styles.modal} onClick={e => e.stopPropagation()}>
+    <div className={styles.backdrop} onClick={() => setOpen(false)} aria-hidden="true">
+      <div
+        data-search-modal
+        role="dialog"
+        aria-modal="true"
+        aria-label="Search"
+        className={styles.modal}
+        onClick={e => e.stopPropagation()}
+      >
 
         <div className={styles.inputRow}>
           <svg className={styles.searchIcon} width="16" height="16" viewBox="0 0 16 16" fill="none">

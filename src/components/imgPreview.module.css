@@ -148,6 +148,10 @@
 .stageNavPrev { left: clamp(16px, 2.5vw, 28px); }
 .stageNavNext { right: clamp(16px, 2.5vw, 28px); }
 
+.backButton {
+  display: none;
+}
+
 .stageMeta {
   position: relative;
   z-index: 1;
@@ -503,11 +507,21 @@
 .sidebarFooter {
   flex-shrink: 0;
   display: flex;
-  flex-wrap: wrap;
-  gap: 16px 22px;
+  flex-direction: column;
+  gap: 18px;
   padding: 18px clamp(24px, 2.5vw, 36px) clamp(22px, 2.5vh, 28px);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   background: #000;
+}
+
+.footerLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 22px;
+}
+
+.closeMobile {
+  display: none;
 }
 
 .footerLink {
@@ -532,32 +546,88 @@
 @media (max-width: 900px) {
   .layout {
     grid-template-columns: 1fr;
-    grid-template-rows: minmax(0, 1.1fr) auto;
+    grid-template-rows: minmax(68vh, 1.1fr) auto;
     overflow-y: auto;
   }
 
   .stage {
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    min-height: 55vh;
+    min-height: 68vh;
   }
 
   .sidebar {
     border-left: none;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: none;
-  }
-
-  .stageInner {
-    padding: 48px 44px;
-  }
-
-  .sidebar {
     overflow: visible;
   }
 
-  .accessLog {
-    margin-top: 0;
+  .stageInner { padding: 80px 20px 28px; }
+  .accessLog  { margin-top: 0; }
+
+  /* Minimum 44px touch target for nav arrows */
+  .stageNav   { width: 44px; height: 44px; }
+
+  .backButton {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    background: rgba(0, 0, 0, 0.58);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: rgba(227, 226, 226, 0.78);
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
   }
+
+  .backButton:hover {
+    border-color: rgba(255, 255, 255, 0.4);
+    color: var(--white);
+  }
+
+  /* Let .layout be the single scroll container — the sidebar's inner
+     block must not scroll on its own here (that's a desktop-only,
+     fixed-100vh-sidebar pattern). */
+  .sidebar       { min-height: auto; }
+  .sidebarScroll {
+    flex: none;
+    min-height: auto;
+    overflow-y: visible;
+  }
+
+  /* Close moves to the bottom of the sidebar on mobile */
+  .sidebarTop .close { display: none; }
+  .closeMobile {
+    display: block;
+    width: 100%;
+    padding: 13px 16px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    font-family: var(--font-sans);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(227, 226, 226, 0.65);
+  }
+}
+
+@media (max-width: 480px) {
+  .layout     { grid-template-rows: minmax(62vh, 1.1fr) auto; }
+  .stageInner { padding: 80px 16px 24px; }
+  .stage      { min-height: 62vh; }
+  .thumb      { width: 52px; height: 52px; }
+  .sidebarTop { padding-left: 16px; padding-right: 16px; }
+  .sidebarIntro { padding-left: 16px; padding-right: 16px; }
+  .sidebarScroll { padding-left: 16px; padding-right: 16px; }
+  .sidebarFooter { padding-left: 16px; padding-right: 16px; }
 }
 
 @media (max-width: 520px) {

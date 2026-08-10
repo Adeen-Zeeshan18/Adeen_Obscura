@@ -175,3 +175,12 @@
   font-size: 9px;
   margin-right: 4px;
 }
+
+@media (max-width: 768px) {
+  .backdrop {
+    padding: 10vh 16px 0;
+    align-items: flex-start;
+  }
+  .results  { max-height: min(280px, 40vh); }
+  .footer   { display: none; }
+}

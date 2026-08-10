@@ -1,4 +1,4 @@
-import styles from '../Home.module.css'
+import styles from './Home.sections.module.css'
 
 export default function SeriesItem({ col, index, line, onNavigate }) {
   const num = String(index + 1).padStart(2, '0')
@@ -16,7 +16,7 @@ export default function SeriesItem({ col, index, line, onNavigate }) {
       }}
     >
       <div className={styles.imgWrap}>
-        <img src={col.coverImage} alt="" />
+        <img src={col.coverImage} alt={col.title} />
       </div>
 
       <div className={styles.meta}>

@@ -5,12 +5,13 @@ export function useGalleryCursorLight({
   pageRef,
   filterBarRef,
   reducedMotion,
+  paused = false,
 }) {
   const cursorRafRef = useRef(0)
   const pendingCursorRef = useRef(null)
 
   useEffect(() => {
-    if (reducedMotion) return
+    if (reducedMotion || paused) return
     const page = pageRef.current
     if (!page) return
 
@@ -59,5 +60,5 @@ export function useGalleryCursorLight({
       cursorRafRef.current = 0
       hide()
     }
-  }, [reducedMotion, pageRef, filterBarRef])
+  }, [reducedMotion, paused, pageRef, filterBarRef])
 }

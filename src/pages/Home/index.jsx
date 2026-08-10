@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import styles from '../Home.module.css'
+import deckStyles    from './Home.deck.module.css'
+import heroStyles    from './Home.hero.module.css'
+import sectionsStyles from './Home.sections.module.css'
+import footerStyles  from './Home.footer.module.css'
+import { useMeta } from '../../hooks/useMeta'
+
+const styles = { ...deckStyles, ...heroStyles, ...sectionsStyles, ...footerStyles }
 import { collections } from '../../data/collections'
 import { HERO_IMAGE, SLIDE_COUNT, SLIDE_LABELS } from './constants'
 import { prefersReducedMotion, seriesLine } from './utils'
@@ -11,6 +17,7 @@ import SeriesItem from './SeriesItem'
 import ExploreFlyLayer from './ExploreFlyLayer.jsx'
 
 export default function Home({ onNavigate }) {
+  useMeta('home')
   const useDeck = !prefersReducedMotion()
 
   const pageRef = useRef(null)
@@ -28,6 +35,7 @@ export default function Home({ onNavigate }) {
 
   const [offsetY, setOffsetY] = useState(0)
   const [count, setCount] = useState({ col: 0, works: 0 })
+  const [newsletter, setNewsletter] = useState({ email: '', status: 'idle', error: '' })
 
   const {
     exploreSymbolRef,
@@ -53,6 +61,12 @@ export default function Home({ onNavigate }) {
     explorePopAnimatingRef,
     deckHeroExitConsumedRef,
   })
+
+  useEffect(() => {
+    document.body.classList.toggle('deck-past-hero', sectionIndex > 0)
+  }, [sectionIndex])
+
+  useEffect(() => () => document.body.classList.remove('deck-past-hero'), [])
 
   useExploreHandoff({
     useDeck,
@@ -105,6 +119,27 @@ export default function Home({ onNavigate }) {
   const nav = (page) => {
     onNavigate(page)
     window.scrollTo({ top: 0 })
+  }
+
+  const NEWSLETTER_ENDPOINT = import.meta.env.VITE_NEWSLETTER_ENDPOINT || ''
+
+  const handleNewsletter = async (e) => {
+    e.preventDefault()
+    if (!newsletter.email) return
+    setNewsletter(s => ({ ...s, status: 'loading', error: '' }))
+    try {
+      if (NEWSLETTER_ENDPOINT) {
+        const res = await fetch(NEWSLETTER_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({ email: newsletter.email }),
+        })
+        if (!res.ok) throw new Error('Subscription failed')
+      }
+      setNewsletter(s => ({ ...s, status: 'done' }))
+    } catch {
+      setNewsletter(s => ({ ...s, status: 'error', error: 'Something went wrong. Please try again.' }))
+    }
   }
 
   const pageClass = `${styles.page}${useDeck ? ` ${styles.pageDeck}` : ''}`
@@ -247,8 +282,11 @@ export default function Home({ onNavigate }) {
             className={`${styles.deckSlideInner} ${styles.deckSlideInnerScroll} ${styles.deckSlideInnerVision}`}
             data-deck-scroll
           >
-            <section ref={visionRef} className={styles.visionBand}>
-              <div className={styles.vision}>
+            <section
+              ref={visionRef}
+              className={`${styles.visionBand} ${deckStyles.visionBand}`}
+            >
+              <div className={`${styles.vision} ${deckStyles.vision}`}>
                 <div className={styles.visionText}>
                   <h2>Every frame is an intention</h2>
                   <p>
@@ -269,7 +307,7 @@ export default function Home({ onNavigate }) {
                   </button>
                 </div>
 
-                <div className={styles.visionImg}>
+                <div className={`${styles.visionImg} ${deckStyles.visionImg}`}>
                   <img
                     src="https://images.unsplash.com/photo-1452587925148-ce544e77e70d?w=900&q=85"
                     alt="Vintage medium format camera"
@@ -294,28 +332,36 @@ export default function Home({ onNavigate }) {
                 </p>
               </div>
 
-              <form
-                className={styles.form}
-                onSubmit={(e) => e.preventDefault()}
-              >
-                <label
-                  className={styles.fieldLabel}
-                  htmlFor="home-newsletter-email"
-                >
-                  Email address
-                </label>
-                <input
-                  id="home-newsletter-email"
-                  type="email"
-                  name="email"
-                  autoComplete="email"
-                  placeholder="Enter your email"
-                  className={styles.input}
-                />
-                <button type="submit" className={styles.subscribeBtn} data-hover>
-                  Subscribe
-                </button>
-              </form>
+              {newsletter.status === 'done' ? (
+                <p className={styles.newsletterSuccess}>You're on the list.</p>
+              ) : (
+                <form className={styles.form} onSubmit={handleNewsletter}>
+                  <label className={styles.fieldLabel} htmlFor="home-newsletter-email">
+                    Email address
+                  </label>
+                  <input
+                    id="home-newsletter-email"
+                    type="email"
+                    name="email"
+                    autoComplete="email"
+                    placeholder="Enter your email"
+                    className={styles.input}
+                    value={newsletter.email}
+                    onChange={e => setNewsletter(s => ({ ...s, email: e.target.value }))}
+                  />
+                  {newsletter.error && (
+                    <p className={styles.newsletterError}>{newsletter.error}</p>
+                  )}
+                  <button
+                    type="submit"
+                    className={styles.subscribeBtn}
+                    data-hover
+                    disabled={newsletter.status === 'loading'}
+                  >
+                    {newsletter.status === 'loading' ? 'Subscribing…' : 'Subscribe'}
+                  </button>
+                </form>
+              )}
             </section>
 
             <footer ref={footerRef} className={styles.footer}>

@@ -43,13 +43,13 @@
   display: block;
   width: 32px;
   height: 1px;
-  background: rgba(201, 169, 110, 0.4);
+  background: var(--border-mid, rgba(255, 255, 255, 0.14));
 }
 
 .text {
   font-family: 'DM Mono', monospace;
   font-size: 11px;
   letter-spacing: 0.4em;
-  color: rgba(245, 240, 235, 0.3);
+  color: rgba(227, 226, 226, 0.28);
   text-transform: uppercase;
 }

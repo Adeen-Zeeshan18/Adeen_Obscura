@@ -1,16 +1,19 @@
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import gsap from 'gsap'
 
 export function useGalleryNavigation({
   motionRef,
   spotlightRef,
+  pageRef,
   setCurrent,
   total,
   reducedMotion,
   activeCategory,
 }) {
+  // Prevents wheel/swipe from stacking animations — keyboard & buttons still interrupt freely
+  const navLockRef = useRef(false)
   const go = useCallback(
-    (dir) => {
+    (dir, startX = 0) => {
       const el = motionRef.current
       if (!el || total < 1) {
         setCurrent((c) => (c + dir + total) % total)
@@ -97,7 +100,7 @@ export function useGalleryNavigation({
           el,
           {
             opacity: 0,
-            x: dir * -40,
+            x: startX + dir * -40,
             rotateY: dir * -12,
             rotateX: 2,
             z: -52,
@@ -141,7 +144,63 @@ export function useGalleryNavigation({
     return () => window.removeEventListener('keydown', fn)
   }, [go])
 
+  // Scroll-wheel navigation — lock for ~900 ms so one gesture = one hop
   useEffect(() => {
+    const LOCK_MS = 900
+    const onWheel = (e) => {
+      if (navLockRef.current) return
+      if (document.body.style.overflow === 'hidden') return // modal is open
+      // Prefer horizontal delta (trackpad swipe) if it dominates, else vertical
+      const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY
+      if (Math.abs(delta) < 30) return
+      navLockRef.current = true
+      setTimeout(() => { navLockRef.current = false }, LOCK_MS)
+      go(delta > 0 ? 1 : -1)
+    }
+    window.addEventListener('wheel', onWheel, { passive: true })
+    return () => window.removeEventListener('wheel', onWheel)
+  }, [go])
+
+  // Touch/swipe navigation — horizontal swipe > 50 px triggers navigation
+  useEffect(() => {
+    const el = pageRef.current
+    if (!el) return
+    let startX = null
+    let startY = null
+    const onTouchStart = (e) => {
+      startX = e.touches[0].clientX
+      startY = e.touches[0].clientY
+    }
+    const onTouchEnd = (e) => {
+      if (startX === null) return
+      const dx = e.changedTouches[0].clientX - startX
+      const dy = e.changedTouches[0].clientY - startY
+      startX = null
+      startY = null
+      // Ignore if swipe is more vertical than horizontal, or too short
+      if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx)) return
+      if (document.body.style.overflow === 'hidden') return
+      if (navLockRef.current) return
+      navLockRef.current = true
+      setTimeout(() => { navLockRef.current = false }, 900)
+      go(dx < 0 ? 1 : -1)
+    }
+    el.addEventListener('touchstart', onTouchStart, { passive: true })
+    el.addEventListener('touchend', onTouchEnd, { passive: true })
+    return () => {
+      el.removeEventListener('touchstart', onTouchStart)
+      el.removeEventListener('touchend', onTouchEnd)
+    }
+  }, [go, pageRef])
+
+  // Reset on filter change only — on mount `current` may have been restored
+  // from the URL, and resetting it here would discard that.
+  const categoryMountedRef = useRef(false)
+  useEffect(() => {
+    if (!categoryMountedRef.current) {
+      categoryMountedRef.current = true
+      return
+    }
     setCurrent(0)
   }, [activeCategory, setCurrent])
 

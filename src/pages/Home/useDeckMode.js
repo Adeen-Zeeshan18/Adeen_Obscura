@@ -32,6 +32,14 @@ export function useDeckMode({
   const animatingRef = useRef(false)
   const revealedRef = useRef(new Set())
   const touchStartY = useRef(null)
+  const wheelStateRef = useRef({
+    index: -1,
+    scrollEl: null,
+    scrollHeight: 0,
+    clientHeight: 0,
+    scrollTop: 0,
+    rafId: null,
+  })
   const [sectionIndex, setSectionIndex] = useState(0)
 
   useEffect(() => {
@@ -193,6 +201,21 @@ export function useDeckMode({
       const y = -tops[next]
       const track = snapTrackRef.current
 
+      // Reset inner scroll of the target slide so the heading is never
+      // hidden behind the nav from a previous scroll session.
+      const targetSlide = Array.from(track.children)[next]
+      if (targetSlide) {
+        const scrollEl = targetSlide.querySelector('[data-deck-scroll]') || targetSlide
+        scrollEl.scrollTop = 0
+      }
+      // Invalidate the wheel handler's cached measurements so the next wheel
+      // event re-measures the new slide instead of reusing stale bounds.
+      if (wheelStateRef.current.rafId != null) {
+        cancelAnimationFrame(wheelStateRef.current.rafId)
+        wheelStateRef.current.rafId = null
+      }
+      wheelStateRef.current.index = -1
+
       if (reduced) {
         gsap.set(track, { y })
         runSectionReveal(next)
@@ -222,6 +245,11 @@ export function useDeckMode({
     if (!track) return
     const ro = new ResizeObserver(() => {
       recomputeTops()
+      // Skip the corrective snap while a slide-transition tween is in flight —
+      // gsap.set() here would otherwise fight gsap.to()'s writes to the same
+      // `y` property (e.g. when late-loading images resize a slide mid-tween),
+      // producing a visible jerk.
+      if (animatingRef.current) return
       const tops = topsRef.current
       const i = indexRef.current
       if (tops[i] != null && snapTrackRef.current) {
@@ -257,6 +285,14 @@ export function useDeckMode({
       const track = snapTrackRef.current
       if (!track || !topsRef.current.length) return
 
+      // Block all wheel events while a slide transition is animating to prevent
+      // fast scroll events from re-scrolling the incoming slide's inner container
+      // before it settles, which would push the title behind the fixed nav.
+      if (animatingRef.current) {
+        e.preventDefault()
+        return
+      }
+
       const i = indexRef.current
       const slides = Array.from(track.children)
       const slide = slides[i]
@@ -264,20 +300,54 @@ export function useDeckMode({
 
       const scrollEl = getScrollable(slide)
       const delta = e.deltaY
-      const canScroll = scrollEl.scrollHeight > scrollEl.clientHeight + 2
+
+      // Reading scrollHeight/clientHeight/scrollTop forces a synchronous
+      // layout flush. A real trackpad gesture can fire this handler dozens of
+      // times per animation frame, and on the series/vision slides that read
+      // was colliding with the concurrent GSAP reveal tween (which writes
+      // transform/opacity every rAF tick) — every wheel tick forced a layout
+      // recalc mid-animation, producing the visible jerk. Measure once per
+      // slide instead, track scrollTop ourselves, and coalesce the actual
+      // DOM write into a single rAF per frame.
+      const wheelState = wheelStateRef.current
+      if (wheelState.index !== i || wheelState.scrollEl !== scrollEl) {
+        wheelState.index = i
+        wheelState.scrollEl = scrollEl
+        wheelState.scrollHeight = scrollEl.scrollHeight
+        wheelState.clientHeight = scrollEl.clientHeight
+        wheelState.scrollTop = scrollEl.scrollTop
+      }
+
+      const canScroll = wheelState.scrollHeight > wheelState.clientHeight + 2
 
       if (canScroll) {
         const atBottom =
-          scrollEl.scrollTop + scrollEl.clientHeight >=
-          scrollEl.scrollHeight - 2
-        const atTop = scrollEl.scrollTop <= 2
+          wheelState.scrollTop + wheelState.clientHeight >=
+          wheelState.scrollHeight - 2
+        const atTop = wheelState.scrollTop <= 2
+
+        const flush = () => {
+          wheelState.rafId = null
+          scrollEl.scrollTop = wheelState.scrollTop
+        }
+        const scheduleWrite = (nextTop) => {
+          wheelState.scrollTop = nextTop
+          if (wheelState.rafId == null) {
+            wheelState.rafId = requestAnimationFrame(flush)
+          }
+        }
+
         if (delta > 0 && !atBottom) {
-          scrollEl.scrollTop += delta
+          const nextTop = Math.min(
+            wheelState.scrollTop + delta,
+            wheelState.scrollHeight - wheelState.clientHeight
+          )
+          scheduleWrite(nextTop)
           e.preventDefault()
           return
         }
         if (delta < 0 && !atTop) {
-          scrollEl.scrollTop += delta
+          scheduleWrite(Math.max(wheelState.scrollTop + delta, 0))
           e.preventDefault()
           return
         }
@@ -318,7 +388,13 @@ export function useDeckMode({
     }
 
     window.addEventListener('wheel', onWheel, { passive: false })
-    return () => window.removeEventListener('wheel', onWheel)
+    return () => {
+      window.removeEventListener('wheel', onWheel)
+      if (wheelStateRef.current.rafId != null) {
+        cancelAnimationFrame(wheelStateRef.current.rafId)
+        wheelStateRef.current.rafId = null
+      }
+    }
   }, [
     useDeck,
     goToSlide,
@@ -385,6 +461,7 @@ export function useDeckMode({
       if (touchStartY.current == null) return
       const dy = touchStartY.current - e.changedTouches[0].clientY
       touchStartY.current = null
+      if (animatingRef.current) return
       if (Math.abs(dy) < 56) return
       const i = indexRef.current
       if (dy > 0) {

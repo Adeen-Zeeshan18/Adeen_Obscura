@@ -1,4 +1,4 @@
-import styles from '../Home.module.css'
+import styles from './Home.hero.module.css'
 
 export default function ExploreFlyLayer({
   exploreFlyLayerRef,
