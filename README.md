@@ -8,7 +8,7 @@ A museum-grade, dark & dramatic photography portfolio built with React + Vite.
 - **Custom cursor** — dot + ring with blend-mode:difference and hover reactions
 - **Parallax hero** — scroll-driven image parallax on the homepage
 - **Filterable gallery** — filter collections by category with animated card grid
-- **Lightbox viewer** — full-screen image viewer with keyboard navigation (←/→/Esc) and thumbnail strip
+- **Image preview viewer** — full-screen image viewer with keyboard navigation (←/→/Esc) and thumbnail strip
 - **Scroll reveal animations** — staggered IntersectionObserver-driven fade-ups
 - **Page transitions** — smooth fade between pages
 - **CSS Modules** — fully scoped styles, no class conflicts
@@ -22,7 +22,7 @@ src/
 │   ├── Nav.jsx / Nav.module.css          # Fixed top navigation
 │   ├── Footer.jsx / Footer.module.css    # Site footer
 │   ├── CollectionCard.jsx / .module.css  # Gallery grid card
-│   └── Lightbox.jsx / Lightbox.module.css # Full-screen image viewer
+│   └── imgPreview.jsx / imgPreview.module.css # Full-screen image viewer
 ├── pages/
 │   ├── Home.jsx / Home.module.css        # Landing page with hero + featured
 │   ├── Gallery.jsx / Gallery.module.css  # Filterable collection grid

@@ -1,0 +1,280 @@
+/* ─── Hero image, copy, explore strip, fly-layer animation ─── */
+
+.hero {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--home-bg);
+}
+
+.heroMain {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: flex-end;
+  padding: calc(var(--nav-height, 64px) + 40px) var(--gutter) clamp(32px, 5vw, 56px);
+}
+
+.heroBg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.heroImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 40%;
+  opacity: 0.55;
+  filter: contrast(1.06) saturate(0.75) grayscale(0.15);
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    rgba(0, 0, 0, 0.75) 0%,
+    rgba(0, 0, 0, 0.35) 45%,
+    rgba(0, 0, 0, 0.55) 100%
+  );
+}
+
+.heroContent {
+  position: relative;
+  z-index: 2;
+  width: min(var(--max-read), 100%);
+}
+
+.title {
+  font-family: var(--serif);
+  font-size: clamp(48px, 6.5vw, 96px);
+  font-weight: 400;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  max-width: 14ch;
+  margin: 0 0 clamp(40px, 6vw, 64px);
+  color: var(--home-text);
+}
+
+.bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: clamp(32px, 5vw, 72px);
+}
+
+.cta {
+  border: 1px solid var(--home-border);
+  padding: 16px 40px;
+  font-family: var(--sans);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  background: transparent;
+  color: var(--home-text);
+  cursor: pointer;
+  transition:
+    background 0.45s var(--ease),
+    color 0.45s var(--ease),
+    border-color 0.3s;
+}
+
+.cta:hover {
+  background: var(--home-text);
+  color: var(--home-bg);
+  border-color: var(--home-text);
+}
+
+.stats {
+  display: flex;
+  gap: clamp(40px, 6vw, 64px);
+}
+
+.statCol {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.statNum {
+  font-family: var(--serif);
+  font-size: clamp(28px, 3.2vw, 40px);
+  font-weight: 400;
+  line-height: 1;
+  color: var(--home-text);
+}
+
+.statLabel {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--home-faint);
+}
+
+.heroTransition {
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  background: var(--home-bg);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.exploreStrip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(22px, 4vh, 36px) var(--gutter) clamp(18px, 3vh, 28px);
+  background: var(--home-bg);
+  transform: translateY(calc(-10px * var(--explore-pass, 0)));
+  perspective: 920px;
+  will-change: transform;
+}
+
+.exploreSymbol3d {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+/* Full-viewport fly layer */
+.exploreFlyLayer {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  pointer-events: none;
+  visibility: hidden;
+  perspective: 1200px;
+}
+
+.exploreFlyCurtain {
+  position: absolute;
+  inset: 0;
+  background: #030303;
+  opacity: 0;
+  will-change: opacity;
+}
+
+.exploreFlyInner {
+  position: absolute;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 14px;
+  padding: 0;
+  overflow: visible;
+  transform-style: preserve-3d;
+  will-change: transform, width, height, top, left;
+}
+
+.exploreFlyInner .exploreLabel {
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+  opacity: 1;
+  transform: none;
+}
+
+.exploreFlyInner .exploreLine {
+  flex-shrink: 0;
+  transform-origin: top center;
+  opacity: 1;
+}
+
+.exploreLabel {
+  display: block;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.32em;
+  line-height: 1.35;
+  text-transform: uppercase;
+  color: var(--home-faint);
+  opacity: calc(1 - 0.72 * var(--explore-pass, 0));
+  transform: translateY(calc(-3px * var(--explore-pass, 0)));
+}
+
+.exploreLine {
+  width: 1px;
+  height: calc(52px * (1 - 0.72 * var(--explore-pass, 0)));
+  min-height: 10px;
+  background: linear-gradient(
+    to bottom,
+    rgba(245, 245, 244, calc(0.72 * (1 - 0.55 * var(--explore-pass, 0)))),
+    transparent
+  );
+  transform-origin: top center;
+  opacity: calc(1 - 0.45 * var(--explore-pass, 0));
+}
+
+.transitionRunway {
+  min-height: max(56px, min(14vh, 140px));
+  flex-shrink: 0;
+  background: linear-gradient(
+    to bottom,
+    var(--home-bg) 0%,
+    var(--home-bg) 55%,
+    #030303 100%
+  );
+  opacity: calc(1 - 0.2 * var(--explore-pass, 0));
+}
+
+@media (max-width: 768px) {
+  .heroMain {
+    padding-top: calc(var(--nav-height, 64px) + 28px);
+  }
+
+  .exploreStrip {
+    padding-top: 18px;
+    padding-bottom: 16px;
+  }
+
+  .transitionRunway {
+    min-height: max(44px, 11vh);
+  }
+
+  .bottom {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .stats {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .exploreFlyLayer { display: none !important; }
+
+  .heroBg { transform: none !important; }
+
+  .exploreStrip,
+  .exploreSymbol3d,
+  .exploreLabel,
+  .exploreLine,
+  .transitionRunway {
+    transform: none !important;
+    opacity: 1 !important;
+    height: auto !important;
+  }
+
+  .exploreLine { height: 52px !important; }
+
+  .cta { transition-duration: 0.01ms !important; }
+}

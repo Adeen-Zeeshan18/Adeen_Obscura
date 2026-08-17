@@ -1,0 +1,273 @@
+/* ─── Quote, Selected series, Vision/About band ─── */
+
+.quoteSection {
+  padding: clamp(72px, 10vw, var(--section-gap)) var(--gutter) var(--section-gap);
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.quoteSection blockquote {
+  margin: 0 auto;
+  max-width: 920px;
+  font-family: var(--serif);
+  font-size: clamp(24px, 3.2vw, 42px);
+  font-style: italic;
+  font-weight: 400;
+  color: var(--home-muted);
+  line-height: 1.55;
+  letter-spacing: -0.01em;
+}
+
+.quoteSection cite {
+  display: block;
+  margin-top: clamp(28px, 4vw, 40px);
+  font-family: var(--sans);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--home-faint);
+}
+
+/* ─── Series ─── */
+
+.series {
+  padding: 0 var(--gutter) var(--section-gap);
+}
+
+.seriesHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 24px;
+  margin-bottom: clamp(36px, 5vw, 52px);
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.seriesHeader h2 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: clamp(32px, 3.6vw, 48px);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
+.archiveLink {
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: var(--sans);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--home-faint);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 6px;
+  text-decoration-color: rgba(245, 245, 244, 0.35);
+  transition: color 0.25s, text-decoration-color 0.25s;
+}
+
+.archiveLink:hover {
+  color: var(--home-text);
+  text-decoration-color: var(--home-text);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(20px, 2.5vw, 36px);
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.item {
+  cursor: pointer;
+}
+
+.item:focus-visible {
+  outline: 1px solid var(--home-border);
+  outline-offset: 4px;
+}
+
+.imgWrap {
+  overflow: hidden;
+  background: #0d0d0d;
+}
+
+.imgWrap img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  filter: grayscale(100%);
+  opacity: 0.82;
+  transform: scale(1.001);
+  transition:
+    transform 1s var(--ease),
+    opacity 0.6s,
+    filter 0.6s;
+}
+
+.item:hover .imgWrap img {
+  transform: scale(1.04);
+  opacity: 1;
+  filter: grayscale(65%);
+}
+
+.meta {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.metaText {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.metaNum {
+  font-family: var(--sans);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  color: var(--home-faint);
+}
+
+.metaTitle {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: clamp(18px, 2vw, 22px);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  text-transform: capitalize;
+  color: var(--home-text);
+}
+
+.metaArrow {
+  font-size: 14px;
+  color: var(--home-muted);
+  line-height: 1;
+  padding-bottom: 2px;
+  transition: transform 0.35s var(--ease);
+}
+
+.item:hover .metaArrow {
+  transform: translateX(4px);
+  color: var(--home-text);
+}
+
+/* ─── Vision / About band ─── */
+
+.visionBand {
+  background: var(--home-vision-bg);
+  padding: clamp(72px, 11vw, 132px) var(--gutter);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.vision {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(48px, 8vw, 100px);
+  align-items: center;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.visionText h2 {
+  margin: 0 0 24px;
+  font-family: var(--serif);
+  font-size: clamp(28px, 3.2vw, 44px);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  max-width: 14ch;
+  color: var(--home-text);
+}
+
+.visionText p {
+  margin: 0 0 32px;
+  color: rgba(232, 230, 227, 0.72);
+  line-height: 1.85;
+  font-size: 15px;
+  max-width: 36ch;
+}
+
+.aboutLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: var(--sans);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(245, 245, 244, 0.55);
+  cursor: pointer;
+  transition: color 0.25s;
+}
+
+.aboutLink:hover {
+  color: var(--home-text);
+}
+
+.aboutArrow {
+  font-size: 12px;
+  line-height: 1;
+  transform: translateY(-1px);
+}
+
+.visionImg {
+  position: relative;
+}
+
+.visionImg img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  filter: grayscale(100%);
+  opacity: 0.88;
+}
+
+@media (max-width: 1024px) {
+  .grid {
+    grid-template-columns: 1fr;
+    max-width: 480px;
+  }
+
+  .visionBand .vision {
+    grid-template-columns: 1fr;
+  }
+
+  .visionBand .visionImg {
+    order: -1;
+    max-width: 520px;
+  }
+}
+
+@media (max-width: 768px) {
+  .grid         { max-width: 100%; }
+  .seriesHeader { flex-wrap: wrap; gap: 12px; }
+  .visionText p { max-width: 100%; }
+  .visionBand .visionImg { max-width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .imgWrap img,
+  .metaArrow {
+    transition-duration: 0.01ms !important;
+  }
+}
