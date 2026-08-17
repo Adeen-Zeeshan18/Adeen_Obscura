@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import styles from '../Gallery.module.css'
 import { useMeta } from '../../hooks/useMeta'
-import { collections, categories } from '../../data/collections'
+import { getCollections, deriveCategories } from '../../lib/sanity/content'
+import { urlFor } from '../../lib/sanity/image'
 import ImgPreview from '../../components/imgPreview'
 import { useGalleryReducedMotion } from './useGalleryReducedMotion'
 import { useGalleryViewportSync } from './useGalleryViewportSync'
@@ -14,8 +15,12 @@ import GalleryFilterBar from './GalleryFilterBar'
 import GalleryStage from './GalleryStage'
 import GalleryNavButtons from './GalleryNavButtons'
 import GalleryFooter from './GalleryFooter'
+import GallerySkeleton from './GallerySkeleton'
 
-function getInitialGalleryState() {
+// Restores a deep-linked collection/image (?c=<slug>&img=<index>) once the
+// collections list has loaded — mirrors what used to run synchronously
+// against the static data import before content moved to Sanity.
+function restoreFromUrl(collections) {
   const params = new URLSearchParams(window.location.search)
   const collectionId = params.get('c')
   const idx = collectionId ? collections.findIndex((c) => c.id === collectionId) : -1
@@ -31,11 +36,26 @@ function getInitialGalleryState() {
 
 export default function Gallery() {
   useMeta('gallery')
-  const [initialState] = useState(getInitialGalleryState)
-  const [current, setCurrent] = useState(initialState.current)
+  const [collections, setCollections] = useState(null)
+  const [current, setCurrent] = useState(0)
   const [activeCategory, setActiveCategory] = useState('All')
-  const [imgPreview, setImgPreview] = useState(initialState.imgPreview)
+  const [imgPreview, setImgPreview] = useState(null)
   const reducedMotion = useGalleryReducedMotion()
+  const restoredRef = useRef(false)
+
+  const categories = collections ? deriveCategories(collections) : ['All']
+
+  useEffect(() => {
+    getCollections().then(setCollections)
+  }, [])
+
+  useEffect(() => {
+    if (!collections || restoredRef.current) return
+    restoredRef.current = true
+    const { current: restoredCurrent, imgPreview: restoredPreview } = restoreFromUrl(collections)
+    setCurrent(restoredCurrent)
+    if (restoredPreview) setImgPreview(restoredPreview)
+  }, [collections])
 
   const motionRef = useRef(null)
   const stageRef = useRef(null)
@@ -43,14 +63,15 @@ export default function Gallery() {
   const filterBarRef = useRef(null)
   const spotlightRef = useRef(null)
 
-  const filtered =
-    activeCategory === 'All'
+  const filtered = !collections
+    ? []
+    : activeCategory === 'All'
       ? collections
       : collections.filter((c) => c.category === activeCategory)
 
   const total = filtered.length
-  const prev = (current - 1 + total) % total
-  const next = (current + 1) % total
+  const prev = total ? (current - 1 + total) % total : 0
+  const next = total ? (current + 1) % total : 0
 
   useGalleryViewportSync({
     pageRef,
@@ -101,8 +122,8 @@ export default function Gallery() {
   // Preload cover + first modal image for adjacent collections
   useEffect(() => {
     [filtered[prev], filtered[next]].filter(Boolean).forEach(col => {
-      new Image().src = col.coverImage
-      if (col.images?.[0]?.src) new Image().src = col.images[0].src
+      if (col.coverImage) new Image().src = urlFor(col.coverImage).width(800).url()
+      if (col.images?.[0]?.image) new Image().src = urlFor(col.images[0].image).width(1200).url()
     })
   }, [current, filtered, prev, next])
 
@@ -117,6 +138,8 @@ export default function Gallery() {
     if (url === `${window.location.pathname}${window.location.search}${window.location.hash}`) return
     window.history.replaceState(null, '', url)
   }, [col, imgPreview])
+
+  if (!collections) return <GallerySkeleton />
 
   return (
     <main

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import styles from './imgPreview.module.css'
+import { urlFor } from '../lib/sanity/image'
 
 function formatExposure(exif) {
   if (!exif) return null
@@ -13,12 +14,14 @@ function formatExposure(exif) {
   return parts.length ? parts.join(' · ') : null
 }
 
-function buildRefId(collection, img) {
+// `index` is the image's position within the series (display numbering only
+// — Sanity's per-image `_key` is a random string, not suited for this).
+function buildRefId(collection, img, index) {
   const series = String(collection.id || '00')
     .replace(/[^a-z0-9]/gi, '')
     .slice(0, 4)
     .toUpperCase()
-  const item = String(img.id ?? 0).padStart(3, '0')
+  const item = String(index + 1).padStart(3, '0')
   return `${series}-${item}-ARCH-${img.year || collection.year || '2024'}`
 }
 
@@ -95,10 +98,10 @@ export default function ImgPreview({ collection, startIndex = 0, onClose, series
   }, [])
 
   const seriesNum = String(seriesIndex + 1).padStart(2, '0')
-  const archiveNum = String(img.id ?? current + 1).padStart(3, '0')
+  const archiveNum = String(current + 1).padStart(3, '0')
   const displayTitle = img.caption?.toUpperCase() || 'UNTITLED'
   const exposure = formatExposure(exif)
-  const refId = buildRefId(collection, img)
+  const refId = buildRefId(collection, img, current)
   const timestamp = `${img.year || collection.year}.10.12 // 04:32:11 UTC`
 
   const manifestRows = [
@@ -149,7 +152,7 @@ export default function ImgPreview({ collection, startIndex = 0, onClose, series
             <div className={styles.imageWrap} key={current}>
               {!loaded && <div className={styles.skeleton} aria-hidden />}
               <img
-                src={img.src}
+                src={urlFor(img.image).width(1600).url()}
                 alt={img.caption}
                 className={`${styles.image} ${loaded ? styles.imageVisible : ''}`}
                 onLoad={() => setLoaded(true)}
@@ -253,7 +256,7 @@ export default function ImgPreview({ collection, startIndex = 0, onClose, series
                     aria-current={i === current ? 'true' : undefined}
                     data-hover
                   >
-                    <img src={thumb.src} alt="" loading="lazy" decoding="async" />
+                    <img src={urlFor(thumb.image).width(160).url()} alt="" loading="lazy" decoding="async" />
                     <span className={styles.thumbIndex}>
                       {String(i + 1).padStart(2, '0')}
                     </span>

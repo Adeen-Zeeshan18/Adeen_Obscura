@@ -389,6 +389,20 @@
   transform: scale(1.003);
 }
 
+/* Loading placeholder (GallerySkeleton) — mirrors .centerWrap/.centerFrame
+   sizing so there's no layout jump once real content swaps in. */
+.skeletonStage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.skeletonFrame {
+  width: min(360px, 36vw);
+  height: min(52vh, 540px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 /* Meta below center frame */
 .centerMeta {
   width: 100%;

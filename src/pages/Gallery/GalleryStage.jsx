@@ -1,4 +1,5 @@
 import styles from '../Gallery.module.css'
+import { urlFor } from '../../lib/sanity/image'
 
 export default function GalleryStage({
   stageRef,
@@ -28,9 +29,9 @@ export default function GalleryStage({
         onClick={onPrev}
         data-hover
       >
-        {colPrev && (
+        {colPrev?.coverImage && (
           <img
-            src={colPrev.coverImage}
+            src={urlFor(colPrev.coverImage).width(400).url()}
             alt={colPrev.title}
             className={styles.sideImg}
             decoding="async"
@@ -53,13 +54,15 @@ export default function GalleryStage({
           onClick={() => { if (!isDragging?.()) onOpenImgPreview() }}
         >
           <div className={styles.centerFrame} data-hover>
-            <img
-              src={col?.coverImage}
-              alt={col?.title}
-              className={styles.centerImg}
-              decoding="async"
-              fetchpriority="high"
-            />
+            {col?.coverImage && (
+              <img
+                src={urlFor(col.coverImage).width(800).url()}
+                alt={col?.title}
+                className={styles.centerImg}
+                decoding="async"
+                fetchpriority="high"
+              />
+            )}
           </div>
 
           <div className={styles.centerMeta}>
@@ -83,9 +86,9 @@ export default function GalleryStage({
         onClick={onNext}
         data-hover
       >
-        {colNext && (
+        {colNext?.coverImage && (
           <img
-            src={colNext.coverImage}
+            src={urlFor(colNext.coverImage).width(400).url()}
             alt={colNext.title}
             className={styles.sideImg}
             decoding="async"
