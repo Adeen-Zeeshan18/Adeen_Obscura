@@ -1,0 +1,11 @@
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.65; }
+}
+
+/* Shared shimmer look for content-loading placeholders. Compose with your
+   own sizing/layout class: `${skeleton.block} ${styles.myPlaceholderBox}` */
+.block {
+  background: rgba(255, 255, 255, 0.04);
+  animation: skeletonPulse 1.4s ease-in-out infinite;
+}

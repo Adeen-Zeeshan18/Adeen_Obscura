@@ -1,461 +1,737 @@
-/* ============================================================
-   GALLERY — Museum Wall Layout
-   Horizontal scroll, framed prints, spotlight per frame
-   ============================================================ */
-
 .page {
-  height: 100vh;
+  /* Overwritten after layout: filterBar bottom + SPOTLIGHT_GAP_BELOW_FILTER_PX (useGalleryViewportSync) */
+  --gallery-spotlight-top: calc(var(--nav-height) + 96px);
+  /* 0–1: vertical fraction of .stage visible in viewport (useGalleryViewportSync) */
+  --gallery-stage-visibility: 1;
+  /* Narrow beam as hero scrolls away; opacity on beam stays GSAP/keyframes-friendly */
+  --gallery-beam-scale-x: calc(0.74 + 0.26 * var(--gallery-stage-visibility, 1));
+  position: relative;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
   padding-top: var(--nav-height);
   background: var(--black);
+  overflow: hidden;
 }
 
-/* ---- Top bar ---- */
-.topBar {
+/* Film grain + edge vignette */
+.grain {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+  opacity: calc(0.055 + 0.022 * (1 - var(--gallery-stage-visibility, 1)));
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grainShift 8s steps(10) infinite;
+}
+
+@keyframes grainShift {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-2%, -3%); }
+  30% { transform: translate(3%, 1%); }
+  50% { transform: translate(-1%, 2%); }
+  70% { transform: translate(2%, -2%); }
+  90% { transform: translate(-3%, 0); }
+}
+
+.vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 49;
+  background: radial-gradient(
+    ellipse 72% 65% at 50% 48%,
+    transparent 0%,
+    transparent 42%,
+    rgba(0, 0, 0, 0.35) 88%,
+    rgba(0, 0, 0, 0.55) 100%
+  );
+}
+
+/* Extra edge falloff as the stage scrolls out of view (scroll-driven via --gallery-stage-visibility) */
+.vignette::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 76% 72% at 50% 50%,
+    transparent 0%,
+    transparent 36%,
+    rgba(0, 0, 0, 0.38) 72%,
+    rgba(0, 0, 0, 0.62) 100%
+  );
+  opacity: calc((1 - var(--gallery-stage-visibility, 1)) * 0.78);
+}
+
+/* Soft cursor-follow pool of light — under main beam (DOM order), weak so it never competes */
+.cursorLight {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: var(--cursor-light-opacity, 0);
+  transition: opacity 0.55s ease;
+  background: radial-gradient(
+    circle max(260px, 20vw) at var(--cursor-light-x, 50%) var(--cursor-light-y, 50%),
+    rgba(227, 226, 226, 0.07) 0%,
+    rgba(227, 226, 226, 0.028) 40%,
+    transparent 68%
+  );
+  mix-blend-mode: soft-light;
+}
+
+/* The image viewer covers the whole viewport, so every ambient layer below it
+   is invisible but still compositing — blend modes and blurred beams included.
+   Drop them while it is open. */
+.previewOpen .grain,
+.previewOpen .vignette,
+.previewOpen .cursorLight,
+.previewOpen .headerSpotlight,
+.previewOpen .galleryRig {
+  display: none;
+}
+
+.previewOpen .centerFrame::after {
+  animation: none;
+}
+
+/* Filter bar — solid band + high z so labels always paint above the fixed beam */
+.filterBar {
+  position: relative;
+  z-index: 4;
+  isolation: isolate;
+  background-color: var(--black);
   display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  padding: 28px 48px 20px;
+  justify-content: center;
+  gap: 0;
+  padding: 32px 60px 0;
   flex-shrink: 0;
-  border-bottom: 1px solid var(--border);
-  z-index: 2;
+  margin-bottom: 18px;
 }
-
-.topLeft {}
-
-.eyebrow {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.25em;
-  color: var(--white-faint);
-  text-transform: uppercase;
-  margin-bottom: 6px;
-}
-
-.eyebrowLine {
-  display: block;
-  width: 28px;
-  height: 1px;
-  background: var(--gold-dim);
-}
-
-.title {
-  font-family: var(--font-serif);
-  font-size: clamp(32px, 4vw, 52px);
-  font-weight: 300;
-  color: var(--white);
-  line-height: 1;
-}
-
-.topRight {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 12px;
-}
-
-.hint {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  color: var(--white-faint);
-  text-transform: uppercase;
-}
-
-.filters {
-  display: flex;
-  gap: 2px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
 .filterBtn {
   background: none;
-  border: 1px solid transparent;
-  color: var(--white-faint);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  padding: 6px 14px;
+  border: none;
   cursor: none;
-  transition: color 0.2s, border-color 0.2s;
-}
-
-.filterBtn:hover {
-  color: var(--white);
-  border-color: var(--border);
-}
-
-.filterActive {
-  color: var(--gold) !important;
-  border-color: var(--gold-dim) !important;
-}
-
-/* ---- Museum wall ---- */
-.museum {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--white-faint);
+  text-transform: uppercase;
+  padding: 6px 16px;
+  transition: color 0.2s;
   position: relative;
-  overflow: hidden;
-  /* Dark wall texture via subtle gradient */
-  background:
-    radial-gradient(ellipse 60% 50% at 50% 100%, rgba(30,20,10,0.4) 0%, transparent 70%),
-    #0a0908;
 }
+.filterBtn::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 16px;
+  right: 16px;
+  height: 1px;
+  background: var(--white);
+  transform: scaleX(0);
+  transition: transform 0.3s var(--ease);
+}
+.filterBtn:hover { color: var(--white); }
+.filterActive { color: var(--white) !important; }
+.filterActive::after { transform: scaleX(1); }
 
-/* Ceiling rail — the track the spotlights hang from */
-.ceilingRail {
-  height: 10px;
-  background: linear-gradient(to bottom, #2a2520 0%, #1a1510 60%, #0f0c09 100%);
-  border-bottom: 1px solid rgba(201,169,110,0.15);
-  flex-shrink: 0;
+/* Stage — tilt CSS vars; stacks above fixed header spotlight */
+.stage {
+  --tilt-x: 0;
+  --tilt-y: 0;
   position: relative;
   z-index: 3;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.8);
-}
-
-/* Horizontal scroll track */
-.track {
   flex: 1;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  cursor: grab;
-}
-
-.track:active { cursor: grabbing; }
-.track::-webkit-scrollbar { display: none; }
-
-.trackInner {
-  display: flex;
-  align-items: center;
-  height: 100%;
-  min-width: max-content;
-  padding-bottom: 60px; /* room for label plates */
-}
-
-.spacer {
-  width: 80px;
-  flex-shrink: 0;
-}
-
-/* Floor line */
-.floor {
-  height: 3px;
-  background: linear-gradient(to right, transparent, rgba(201,169,110,0.08) 20%, rgba(201,169,110,0.08) 80%, transparent);
-  flex-shrink: 0;
-}
-
-/* ---- Each frame unit ---- */
-.frameWrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex-shrink: 0;
-  margin: 0 28px;
-  position: relative;
-  transform: translateY(var(--oy, 0px));
-  cursor: none;
-  /* Extra top space for the spotlight assembly */
-  padding-top: 64px;
-}
-
-/* ---- Spotlight assembly ---- */
-.spotlight {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  z-index: 4;
-  pointer-events: none;
-}
-
-.spWire {
-  width: 1px;
-  height: 28px;
-  background: linear-gradient(to bottom, rgba(201,169,110,0.4), rgba(201,169,110,0.15));
-}
-
-.spHead {
-  width: 28px;
-  height: 18px;
-  background: #1e1a14;
-  border: 1px solid rgba(201,169,110,0.2);
-  border-radius: 4px 4px 8px 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
-  transition: background 0.5s ease, border-color 0.5s ease;
+  padding: 90px 0 24px;
+  isolation: isolate;
+  overflow: hidden;
 }
 
-.spHeadOn {
-  background: #2d2518;
-  border-color: rgba(201,169,110,0.55);
-}
-
-.spLens {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #111;
-  border: 1px solid rgba(201,169,110,0.2);
-  transition: background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
-}
-
-.spHeadOn .spLens {
-  background: radial-gradient(circle, #ffe4a0 0%, #d4a84b 50%, #8a6820 100%);
-  border-color: rgba(255,220,120,0.7);
-  box-shadow: 0 0 6px 2px rgba(255,200,80,0.6), 0 0 12px 4px rgba(201,169,110,0.3);
-}
-
-.spRim {
-  position: absolute;
-  bottom: -2px;
+/* Streetlight anchor — offset down so beam apex aligns with the lamp lens (49px below rig bar)
+   + 4px for spotBeam's translateY(10px) - top(-14px) = +4px, giving 53px total */
+.headerSpotlight {
+  position: fixed;
   left: 50%;
+  top: calc(var(--gallery-spotlight-top, calc(var(--nav-height) + 96px)) + 53px);
   transform: translateX(-50%);
-  width: 16px;
-  height: 3px;
-  background: #2a2418;
-  border-radius: 0 0 3px 3px;
-}
-
-/* Cone of light projected downward */
-.spBeam {
+  z-index: 0;
   width: 0;
   height: 0;
-  border-left: 0px solid transparent;
-  border-right: 0px solid transparent;
-  border-top: 0px solid transparent;
-  opacity: 0;
-  transition: opacity 0.6s ease, border-left-width 0.6s ease,
-              border-right-width 0.6s ease, border-top-width 0.6s ease;
   pointer-events: none;
 }
 
-.spBeamOn {
-  border-left: 60px solid transparent;
-  border-right: 60px solid transparent;
-  border-top: 260px solid rgba(255, 210, 100, 0.045);
-  opacity: 1;
-}
-
-/* ---- The picture frame ---- */
-.frame {
-  position: relative;
-  flex-shrink: 0;
-  transition: transform 0.5s cubic-bezier(0.25,0.46,0.45,0.94);
-}
-
-.frameOn {
-  transform: translateY(-6px);
-}
-
-/* Outer ornate gold frame border */
-.frameBorder {
-  width: 100%;
-  height: 100%;
-  padding: 12px;
-  background:
-    linear-gradient(135deg, #8a7040 0%, #c9a96e 25%, #e8c97e 40%, #b89050 55%, #c9a96e 70%, #8a7040 100%);
-  box-shadow:
-    inset 0 0 0 1px rgba(255,240,180,0.3),
-    inset 0 0 0 3px rgba(80,55,20,0.5),
-    0 8px 40px rgba(0,0,0,0.7),
-    0 2px 8px rgba(0,0,0,0.5);
-  position: relative;
-}
-
-/* Inner bevel on frame */
-.frameBorder::before {
-  content: '';
+.spotTop {
   position: absolute;
-  inset: 4px;
-  border: 1px solid rgba(80,55,20,0.6);
-  pointer-events: none;
+  left: 50%;
+  top: -46px;
+  width: 220px;
+  height: 220px;
+  transform: translateX(-50%);
+  background: radial-gradient(
+    circle at center,
+    rgba(227, 226, 226, 0.3) 0%,
+    rgba(227, 226, 226, 0.16) 32%,
+    rgba(227, 226, 226, 0.06) 58%,
+    rgba(227, 226, 226, 0) 100%
+  );
+  filter: blur(14px);
+  opacity: 0.75;
+  animation: spotlightPulseTop 5.5s ease-in-out infinite;
+  transition: width 0.35s var(--ease), height 0.35s var(--ease), opacity 0.35s var(--ease), top 0.35s var(--ease);
 }
 
-.frameBorder::after {
-  content: '';
+.spotBeam {
   position: absolute;
-  inset: 6px;
-  border: 1px solid rgba(255,240,180,0.15);
-  pointer-events: none;
+  left: 50%;
+  top: -14px;
+  width: 520px;
+  height: min(82vh, 880px);
+  transform: translateX(-50%) translateY(10px) scaleX(var(--gallery-beam-scale-x, 1));
+  background: linear-gradient(
+    to bottom,
+    rgba(227, 226, 226, 0.24) 0%,
+    rgba(227, 226, 226, 0.14) 14%,
+    rgba(227, 226, 226, 0.09) 32%,
+    rgba(227, 226, 226, 0.045) 52%,
+    rgba(227, 226, 226, 0) 100%
+  );
+  clip-path: polygon(40% 0%, 60% 0%, 95% 100%, 5% 100%);
+  filter: blur(12px);
+  mix-blend-mode: normal;
+  opacity: 0.62;
+  animation: spotlightPulseBeam 6.2s ease-in-out infinite 0.4s;
+  /* transform omitted so scaleX(--gallery-beam-scale-x) tracks scroll without transition lag */
+  transition:
+    width 0.35s var(--ease),
+    height 0.35s var(--ease),
+    opacity 0.35s var(--ease),
+    top 0.35s var(--ease),
+    filter 0.35s var(--ease);
 }
 
-/* White/cream matte mount inside frame */
-.matte {
-  width: 100%;
-  height: 100%;
-  background: #f0ece4;
-  padding: 16px;
-  position: relative;
+.page:has(.centerFrame:hover) .spotTop {
+  width: 260px;
+  height: 260px;
+  top: -68px;
+  opacity: 0.92;
+  animation: none;
 }
 
-.photoWrap {
-  width: 100%;
-  height: 100%;
+.page:has(.centerFrame:hover) .spotBeam {
+  width: 680px;
+  height: min(90vh, 960px);
+  top: -14px;
+  opacity: 0.82;
+  filter: blur(14px);
+  transform: translateX(-50%) translateY(14px) scaleX(var(--gallery-beam-scale-x, 1));
+  animation: none;
+}
+
+/* Side frames — asymmetric parallax + depth (L/R read differently) */
+.sideFrame {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 22%;
   overflow: hidden;
-  background: #111;
-  position: relative;
+  cursor: none;
+  z-index: 0;
+  transition: transform 0.35s var(--ease);
 }
-
-.skeleton {
+.sideLeft {
+  transform: translate3d(calc(var(--tilt-x) * 18px), calc(var(--tilt-y) * 5px), 0) scale(0.965);
+}
+.sideRight {
+  transform: translate3d(calc(var(--tilt-x) * -18px), calc(var(--tilt-y) * 5px), 0) scale(0.965);
+}
+.sideImg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  filter: brightness(0.25) blur(2px);
+  transition: filter 0.4s, transform 0.5s var(--ease);
+  transform: scale(0.96);
+}
+.sideLeft .sideImg {
+  filter: brightness(0.2) blur(2.8px);
+}
+.sideRight .sideImg {
+  filter: brightness(0.3) blur(1.4px);
+}
+.sideLeft:hover .sideImg {
+  filter: brightness(0.42) blur(1.1px);
+  transform: scale(0.98);
+}
+.sideRight:hover .sideImg {
+  filter: brightness(0.5) blur(0.75px);
+  transform: scale(0.98);
+}
+.sideFade {
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, #1a1a1a 25%, #242424 50%, #1a1a1a 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.8s infinite;
+  pointer-events: none;
 }
 
-@keyframes shimmer {
-  from { background-position: 200% 0; }
-  to   { background-position: -200% 0; }
+/* Center column — slightly smaller frame so spotlight + depth read stronger */
+.centerWrap {
+  position: relative;
+  z-index: 2;
+  width: min(360px, 36vw);
+  perspective: 1050px;
+  perspective-origin: 50% 40%;
 }
 
-.photo {
+.centerMotion {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: none;
+  overflow: visible;
+  transform-style: preserve-3d;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .centerMotion {
+    will-change: transform, opacity;
+  }
+}
+
+@keyframes frameRimPulse {
+  0%, 100% { opacity: 0.38; }
+  50% { opacity: 0.72; }
+}
+
+@keyframes spotlightPulseTop {
+  0%, 100% { opacity: 0.7; transform: translateX(-50%) scale(1); }
+  50% { opacity: 0.88; transform: translateX(-50%) scale(1.04); }
+}
+
+/* Opacity only — animating blur() on a 520x880 layer repaints it every frame */
+@keyframes spotlightPulseBeam {
+  0%, 100% { opacity: 0.58; }
+  50% { opacity: 0.76; }
+}
+
+.centerFrame {
+  width: 100%;
+  height: min(52vh, 540px);
+  position: relative;
+  overflow: hidden;
+  background: #0d0e0f;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: 2;
+  transform-style: preserve-3d;
+  transform:
+    rotateX(calc(var(--tilt-y, 0) * -6.5deg))
+    rotateY(calc(var(--tilt-x, 0) * 8.5deg))
+    translateZ(20px);
+  box-shadow:
+    calc(var(--tilt-x, 0) * -36px) calc(52px + var(--tilt-y, 0) * 20px) 100px rgba(0, 0, 0, 0.84),
+    calc(var(--tilt-x, 0) * -14px) calc(20px + var(--tilt-y, 0) * 9px) 48px rgba(0, 0, 0, 0.58),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+  transition: transform 0.45s var(--ease), box-shadow 0.45s var(--ease);
+}
+
+.centerFrame:hover {
+  transform:
+    rotateX(calc(var(--tilt-y, 0) * -6.5deg))
+    rotateY(calc(var(--tilt-x, 0) * 8.5deg))
+    translateZ(38px)
+    scale(1.008);
+  box-shadow:
+    calc(var(--tilt-x, 0) * -44px) calc(62px + var(--tilt-y, 0) * 24px) 130px rgba(0, 0, 0, 0.9),
+    calc(var(--tilt-x, 0) * -18px) calc(26px + var(--tilt-y, 0) * 11px) 56px rgba(0, 0, 0, 0.65),
+    0 0 56px rgba(227, 226, 226, 0.08);
+}
+
+/* Top-edge rim light — same 5.5s cadence as spotlightPulseTop */
+.centerFrame::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(
+    185deg,
+    rgba(255, 255, 255, 0.18) 0%,
+    rgba(255, 255, 255, 0.05) 20%,
+    transparent 50%
+  );
+  mix-blend-mode: soft-light;
+  opacity: 0.55;
+  animation: frameRimPulse 5.5s ease-in-out infinite;
+}
+
+.centerFrame:hover::after {
+  opacity: 0.88;
+  animation: none;
+}
+
+.centerImg {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  object-position: center;
   display: block;
-  opacity: 0;
-  transition: opacity 0.5s ease, transform 0.7s cubic-bezier(0.25,0.46,0.45,0.94);
-}
-
-.photoLoaded { opacity: 1; }
-
-.frame:hover .photo {
-  transform: scale(1.04);
-}
-
-/* Ambient warm glow on wall around frame when lit */
-.wallGlow {
-  position: absolute;
-  inset: -40px;
-  background: radial-gradient(ellipse 80% 70% at 50% 50%, rgba(201,169,110,0.0) 0%, transparent 70%);
-  pointer-events: none;
-  transition: background 0.6s ease;
-  z-index: -1;
-}
-
-.wallGlowOn {
-  background: radial-gradient(ellipse 80% 70% at 50% 50%, rgba(201,169,110,0.06) 0%, transparent 70%);
-}
-
-/* ---- Label plate ---- */
-.plate {
-  margin-top: 18px;
-  text-align: center;
-  opacity: 0.3;
-  transform: translateY(4px);
-  transition: opacity 0.4s ease, transform 0.4s ease;
-}
-
-.plateOn {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.plateLine {
-  width: 24px;
-  height: 1px;
-  background: var(--gold-dim);
-  margin: 0 auto 10px;
-}
-
-.plateTitle {
-  display: block;
-  font-family: var(--font-serif);
-  font-size: 15px;
-  font-style: italic;
-  color: var(--white);
-  margin-bottom: 4px;
-}
-
-.plateSub {
-  display: block;
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.15em;
-  color: var(--gold);
-  text-transform: uppercase;
-  margin-bottom: 3px;
-}
-
-.plateCount {
-  display: block;
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.1em;
-  color: var(--white-faint);
-  text-transform: uppercase;
-}
-
-/* ---- Progress & bottom bar ---- */
-.progressWrap {
-  flex-shrink: 0;
-  padding: 0 48px 16px;
-}
-
-.progressBar {
-  height: 1px;
-  background: var(--border);
-  margin-bottom: 10px;
   position: relative;
+  z-index: 1;
+  transition: transform 0.55s var(--ease);
 }
 
-.progressFill {
-  position: absolute;
-  left: 0;
-  top: 0;
-  height: 1px;
-  background: var(--gold);
-  transition: width 0.1s linear;
+.centerFrame:hover .centerImg {
+  transform: scale(1.003);
 }
 
-.bottomBar {
+/* Loading placeholder (GallerySkeleton) — mirrors .centerWrap/.centerFrame
+   sizing so there's no layout jump once real content swaps in. */
+.skeletonStage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.skeletonFrame {
+  width: min(360px, 36vw);
+  height: min(52vh, 540px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Meta below center frame */
+.centerMeta {
+  width: 100%;
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  transform: translateZ(12px);
+}
+.centerDivider {
+  width: 1px;
+  height: 32px;
+  background: var(--border-mid);
+}
+.centerInfo { text-align: center; }
+.centerCode {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--white);
+  margin-bottom: 5px;
+}
+.centerSub {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--white-faint);
+}
+
+/* Nav buttons */
+.navBtns {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0;
+  padding: 0 60px 28px;
+  flex-shrink: 0;
+}
+.navBtn {
+  width: 44px;
+  height: 44px;
+  background: none;
+  border: 1px solid var(--border-hover);
+  color: var(--white-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: none;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+.navBtn:hover {
+  border-color: var(--white);
+  color: var(--white);
+}
+.navCounter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 18px;
+  border-top: 1px solid var(--border-hover);
+  border-bottom: 1px solid var(--border-hover);
+  height: 44px;
+  min-width: 72px;
+  justify-content: center;
+}
+.navCounterCurrent {
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--white);
+  font-variant-numeric: tabular-nums;
+}
+.navCounterSep {
+  font-size: 10px;
+  color: var(--white-faint);
+  margin: 0 1px;
+}
+.navCounterTotal {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--white-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Footer */
+.footer {
+  position: relative;
+  z-index: 3;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 20px 60px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
 }
-
-.bottomCount {
-  font-family: var(--font-mono);
+.footerCopy {
   font-size: 10px;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.08em;
   color: var(--white-faint);
-  text-transform: uppercase;
 }
-
-.bottomPct {
-  font-family: var(--font-mono);
+.footerLinks { display: flex; gap: 28px; }
+.footerLink {
+  background: none;
+  border: none;
+  cursor: none;
   font-size: 10px;
   letter-spacing: 0.1em;
-  color: var(--gold);
+  color: var(--white-faint);
+  text-transform: uppercase;
+  transition: color 0.2s;
+}
+.footerLink:hover { color: var(--white); }
+
+@media (max-width: 768px) {
+  .centerWrap {
+    width: min(78vw, 380px);
+    max-width: 380px;
+    perspective: 980px;
+  }
+  .spotTop {
+    width: 160px;
+    height: 160px;
+    top: -46px;
+  }
+  .spotBeam {
+    width: 360px;
+    height: min(76vh, 700px);
+    top: -12px;
+    transform: translateX(-50%) translateY(8px) scaleX(var(--gallery-beam-scale-x, 1));
+  }
+  .centerFrame { height: min(48vh, 480px); }
+  .sideFrame { width: 10%; }
+  .stage { padding-top: 78px; }
+  .navBtns,
+  .footer {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+  .filterBar {
+    padding: 20px 24px 0;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .navBtns {
+    justify-content: center;
+  }
+  .grain {
+    opacity: calc(0.04 + 0.02 * (1 - var(--gallery-stage-visibility, 1)));
+  }
 }
 
-/* ---- Responsive ---- */
-@media (max-width: 768px) {
-  .topBar {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-    padding: 20px 24px 16px;
+/* ── Gallery stage lighting rig ──────────────────────────────────── */
+
+/* Truss rail + 3 lamp fixtures anchored at the spotlight origin line.
+   z-index: 5 so the rail is visible at the filter-bar / stage boundary. */
+.galleryRig {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: var(--gallery-spotlight-top, calc(var(--nav-height) + 96px));
+  pointer-events: none;
+  z-index: 5;
+  animation: galleryRigFadeIn 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.4s both;
+}
+
+@keyframes galleryRigFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Horizontal truss — two rails with diagonal lattice bracing */
+.galleryRigBar {
+  position: absolute;
+  top: 0;
+  left: 6%;
+  right: 6%;
+  height: 2px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(88, 88, 88, 0.52) 5%,
+    rgba(108, 108, 108, 0.58) 50%,
+    rgba(88, 88, 88, 0.52) 95%,
+    transparent
+  );
+}
+
+.galleryRigBar::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 8px;
+  height: 1px;
+  background: rgba(65, 65, 65, 0.38);
+}
+
+.galleryRigBar::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: -8px;
+  background: repeating-linear-gradient(
+    68deg,
+    transparent          0px,
+    transparent          18px,
+    rgba(58, 58, 58, 0.32) 18px,
+    rgba(58, 58, 58, 0.32) 19px,
+    transparent          19px,
+    transparent          26px
+  );
+}
+
+/* Individual lamp — positioned by inline left + --lamp-scale */
+.galleryLamp {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Side lamps fade to match dimmed side images */
+.galleryRig .galleryLamp:nth-child(2),
+.galleryRig .galleryLamp:nth-child(4) {
+  opacity: 0.28;
+}
+
+/* Thin light shaft connecting center lamp lens to the spotlight beam below */
+.galleryRig .galleryLamp:nth-child(3) .galleryLampLens::after {
+  content: '';
+  position: absolute;
+  bottom: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1px;
+  height: 22px;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.38),
+    transparent
+  );
+}
+
+/* Thin mounting arm from truss to housing */
+.galleryLampArm {
+  width: 2px;
+  height: calc(14px * var(--lamp-scale, 1));
+  margin-top: 4px;
+  background: linear-gradient(
+    to bottom,
+    rgba(92, 92, 92, 0.8),
+    rgba(55, 55, 55, 0.55)
+  );
+}
+
+/* Trapezoidal PAR can body */
+.galleryLampBody {
+  width:  calc(18px * var(--lamp-scale, 1));
+  height: calc(24px * var(--lamp-scale, 1));
+  background: linear-gradient(155deg, #2a2a2a 0%, #1a1a1a 55%, #0e0e0e 100%);
+  clip-path: polygon(14% 0%, 86% 0%, 100% 100%, 0% 100%);
+  border-top: 1px solid rgba(92, 92, 92, 0.42);
+}
+
+/* Glowing lens aperture */
+.galleryLampLens {
+  position: relative;
+  width:  calc(22px * var(--lamp-scale, 1));
+  height: calc(7px  * var(--lamp-scale, 1));
+  border-radius: 0 0 5px 5px;
+  background: radial-gradient(
+    ellipse 100% 100% at 50% 0%,
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(215, 215, 215, 0.55) 45%,
+    rgba(175, 175, 175, 0.12) 80%,
+    transparent               100%
+  );
+}
+
+/* Extra-small phones: shrink spotlight further, hide side lamps */
+@media (max-width: 480px) {
+  .spotTop  { width: 110px; height: 110px; top: -32px; }
+  .spotBeam { width: 240px; }
+  .filterBar { gap: 0; }
+  .navBtns  { padding-bottom: 20px; }
+  .galleryRig .galleryLamp:nth-child(2),
+  .galleryRig .galleryLamp:nth-child(4) { display: none; }
+}
+
+/* Respect OS motion preference: stop ambient loops, shorten transitions, ease GPU filters */
+@media (prefers-reduced-motion: reduce) {
+  .cursorLight {
+    display: none !important;
   }
-  .topRight { align-items: flex-start; }
-  .filters { justify-content: flex-start; }
-  .progressWrap { padding: 0 24px 14px; }
-  .frameWrap { margin: 0 16px; padding-top: 52px; }
-  .spacer { width: 24px; }
+  .grain {
+    animation: none;
+  }
+  .spotTop,
+  .spotBeam {
+    animation: none;
+  }
+  .centerFrame::after {
+    animation: none;
+  }
+  .centerFrame,
+  .centerImg,
+  .sideFrame,
+  .sideImg,
+  .spotTop,
+  .spotBeam {
+    transition-duration: 0.01ms !important;
+  }
+  .filterBtn::after {
+    transition-duration: 0.01ms !important;
+  }
+  .sideLeft .sideImg {
+    filter: brightness(0.22) blur(1px);
+  }
+  .sideRight .sideImg {
+    filter: brightness(0.28) blur(0.5px);
+  }
+  .galleryRig {
+    animation: none;
+  }
 }

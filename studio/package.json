@@ -1,0 +1,24 @@
+{
+  "name": "obscura-studio",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "sanity dev",
+    "start": "sanity start",
+    "build": "sanity build",
+    "deploy": "sanity deploy"
+  },
+  "dependencies": {
+    "@sanity/vision": "^3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-is": "^19.2.8",
+    "sanity": "^3",
+    "styled-components": "^6.5.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "typescript": "^5.4.0"
+  }
+}

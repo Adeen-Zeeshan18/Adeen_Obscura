@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.vite/
+
+.env
+.env.local
+.env.*.local
+
+studio/node_modules/
+studio/dist/
+studio/.sanity/
+
+*.log
+.DS_Store
