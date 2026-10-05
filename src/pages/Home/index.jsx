@@ -6,7 +6,7 @@ import footerStyles  from './Home.footer.module.css'
 import { useMeta } from '../../hooks/useMeta'
 
 const styles = { ...deckStyles, ...heroStyles, ...sectionsStyles, ...footerStyles }
-import { collections } from '../../data/collections'
+import { getCollections } from '../../lib/sanity/content'
 import { HERO_IMAGE, SLIDE_COUNT, SLIDE_LABELS } from './constants'
 import { prefersReducedMotion, seriesLine } from './utils'
 import { useExploreHandoff } from './useExploreHandoff'
@@ -36,6 +36,13 @@ export default function Home({ onNavigate }) {
   const [offsetY, setOffsetY] = useState(0)
   const [count, setCount] = useState({ col: 0, works: 0 })
   const [newsletter, setNewsletter] = useState({ email: '', status: 'idle', error: '' })
+  const [collections, setCollections] = useState([])
+
+  useEffect(() => {
+    getCollections()
+      .then(setCollections)
+      .catch((err) => console.error('[Home] Failed to load collections from Sanity', err))
+  }, [])
 
   const {
     exploreSymbolRef,
@@ -113,7 +120,7 @@ export default function Home({ onNavigate }) {
     }, 20)
 
     return () => clearInterval(timer)
-  }, [])
+  }, [collections])
 
   const series = collections.slice(0, 3)
   const nav = (page) => {

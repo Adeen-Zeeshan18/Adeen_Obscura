@@ -597,9 +597,20 @@
      fixed-100vh-sidebar pattern). */
   .sidebar       { min-height: auto; }
   .sidebarScroll {
+    display: flex;
+    flex-direction: column;
     flex: none;
     min-height: auto;
     overflow-y: visible;
+  }
+
+  /* The filmstrip (the rest of this series' images) is the thing people
+     want right after the title on mobile — bump it above the technical
+     manifest/description/access-log blocks instead of making them scroll
+     past all of that first. DOM order is unchanged (those blocks have no
+     focusable content, so this doesn't disturb tab order). */
+  .filmstripBlock {
+    order: -1;
   }
 
   /* Close moves to the bottom of the sidebar on mobile */

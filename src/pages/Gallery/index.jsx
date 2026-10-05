@@ -37,6 +37,7 @@ function restoreFromUrl(collections) {
 export default function Gallery() {
   useMeta('gallery')
   const [collections, setCollections] = useState(null)
+  const [loadError, setLoadError] = useState(false)
   const [current, setCurrent] = useState(0)
   const [activeCategory, setActiveCategory] = useState('All')
   const [imgPreview, setImgPreview] = useState(null)
@@ -45,9 +46,19 @@ export default function Gallery() {
 
   const categories = collections ? deriveCategories(collections) : ['All']
 
-  useEffect(() => {
-    getCollections().then(setCollections)
+  const loadCollections = useCallback(() => {
+    setLoadError(false)
+    getCollections()
+      .then(setCollections)
+      .catch((err) => {
+        console.error('[Gallery] Failed to load collections from Sanity', err)
+        setLoadError(true)
+      })
   }, [])
+
+  useEffect(() => {
+    loadCollections()
+  }, [loadCollections])
 
   useEffect(() => {
     if (!collections || restoredRef.current) return
@@ -139,6 +150,38 @@ export default function Gallery() {
     if (url === `${window.location.pathname}${window.location.search}${window.location.hash}`) return
     window.history.replaceState(null, '', url)
   }, [col, imgPreview])
+
+  if (loadError) {
+    return (
+      <main className={styles.page} style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        justifyContent: 'center', minHeight: '100vh', gap: '16px',
+        color: 'var(--white)', textAlign: 'center', padding: '40px',
+      }}>
+        <p style={{ fontSize: '0.7rem', letterSpacing: '0.14em', opacity: 0.4 }}>
+          CONNECTION ERROR
+        </p>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: 300, margin: 0 }}>
+          Couldn't load the gallery.
+        </h2>
+        <p style={{ fontSize: '0.8rem', opacity: 0.5, maxWidth: '320px' }}>
+          There was a problem reaching the content source. Check your connection and try again.
+        </p>
+        <button
+          type="button"
+          onClick={loadCollections}
+          data-hover
+          style={{
+            marginTop: '8px', padding: '10px 24px', background: 'transparent',
+            border: '1px solid rgba(255,255,255,0.2)', color: 'inherit',
+            fontSize: '0.75rem', letterSpacing: '0.1em', cursor: 'pointer',
+          }}
+        >
+          RETRY
+        </button>
+      </main>
+    )
+  }
 
   if (!collections) return <GallerySkeleton />
 

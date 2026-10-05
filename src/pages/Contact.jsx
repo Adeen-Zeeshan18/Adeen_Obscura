@@ -6,6 +6,7 @@ import { useSectionReveal } from '../hooks/useSectionReveal'
 const CONTACT_ENDPOINT = import.meta.env.VITE_CONTACT_ENDPOINT || ''
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const HTML_TAG_RE = /[<>]/
 
 const SOCIAL_LINKS = [
   { label: 'Instagram — @obscura.film', href: 'https://instagram.com/obscura.film' },
@@ -51,8 +52,15 @@ export default function Contact() {
   const validate = () => {
     const errs = {}
     if (!form.name.trim()) errs.name = 'Name is required'
+    else if (HTML_TAG_RE.test(form.name)) errs.name = 'HTML tags are not allowed'
+
     if (!form.email.trim()) errs.email = 'Email is required'
     else if (!EMAIL_RE.test(form.email)) errs.email = 'Enter a valid email address'
+    else if (HTML_TAG_RE.test(form.email)) errs.email = 'HTML tags are not allowed'
+
+    if (!form.message.trim()) errs.message = 'Message is required'
+    else if (HTML_TAG_RE.test(form.message)) errs.message = 'HTML tags are not allowed'
+
     return errs
   }
 
