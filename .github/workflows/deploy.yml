@@ -30,6 +30,9 @@ jobs:
           # origin allowlisting is the actual access control.
           VITE_SANITY_PROJECT_ID: p7bvk2l5
           VITE_SANITY_DATASET: production
+          # Also not secret — it's a public form submission endpoint, not a
+          # credential, and ends up in the client bundle either way.
+          VITE_CONTACT_ENDPOINT: https://formspree.io/f/mdeaoonj
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
