@@ -13,6 +13,12 @@ import {
 } from './constants'
 import { prefersReducedMotion, isFormField } from './utils'
 
+function getScrollable(slideEl) {
+  const marked = slideEl.querySelector('[data-deck-scroll]')
+  if (marked) return marked
+  return slideEl
+}
+
 export function useDeckMode({
   useDeck,
   styles,
@@ -272,12 +278,6 @@ export function useDeckMode({
   useEffect(() => {
     if (!useDeck) return
 
-    const getScrollable = (slideEl) => {
-      const marked = slideEl.querySelector('[data-deck-scroll]')
-      if (marked) return marked
-      return slideEl
-    }
-
     const onWheel = (e) => {
       const page = pageRef.current
       if (!page || !page.contains(e.target)) return
@@ -463,7 +463,25 @@ export function useDeckMode({
       touchStartY.current = null
       if (animatingRef.current) return
       if (Math.abs(dy) < 56) return
+
       const i = indexRef.current
+      const track = snapTrackRef.current
+      const slide = track && Array.from(track.children)[i]
+      if (slide) {
+        const scrollEl = getScrollable(slide)
+        const canScroll = scrollEl.scrollHeight > scrollEl.clientHeight + 2
+        if (canScroll) {
+          const atBottom =
+            scrollEl.scrollTop + scrollEl.clientHeight >=
+            scrollEl.scrollHeight - 2
+          const atTop = scrollEl.scrollTop <= 2
+          // A swipe that hasn't reached the end of the slide's inner content
+          // yet is scrolling that content, not navigating slides.
+          if (dy > 0 && !atBottom) return
+          if (dy < 0 && !atTop) return
+        }
+      }
+
       if (dy > 0) {
         if (i === 0) {
           if (explorePopAnimatingRef.current) return
@@ -490,6 +508,7 @@ export function useDeckMode({
     goToSlide,
     runExplorePop,
     pageRef,
+    snapTrackRef,
     explorePopAnimatingRef,
     deckHeroExitConsumedRef,
   ])

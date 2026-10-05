@@ -7,11 +7,28 @@ import {
   NAV_SETTINGS_QUERY,
 } from './queries'
 
+// Caches each query's in-flight/resolved promise for the life of the tab, so
+// remounting a page (or React.StrictMode's double-invoke in dev) reuses the
+// same request instead of paying a fresh network round-trip every time. A
+// failed fetch clears its own cache entry so the next call can retry.
+const queryCache = new Map()
+
+function cachedFetch(key, query) {
+  if (!queryCache.has(key)) {
+    const promise = client.fetch(query).catch((err) => {
+      queryCache.delete(key)
+      throw err
+    })
+    queryCache.set(key, promise)
+  }
+  return queryCache.get(key)
+}
+
 // Same shape as the old src/data/collections.js export, except `coverImage`
 // and each image's `image` field are raw Sanity image objects (not URL
 // strings) — call urlFor() on them at render time to keep hotspot/crop info.
 export async function getCollections() {
-  return client.fetch(COLLECTIONS_QUERY)
+  return cachedFetch('collections', COLLECTIONS_QUERY)
 }
 
 // Derived from the collections themselves (in their display order) rather
@@ -31,17 +48,17 @@ export function deriveCategories(collections) {
 }
 
 export async function getHomePage() {
-  return client.fetch(HOME_PAGE_QUERY)
+  return cachedFetch('homePage', HOME_PAGE_QUERY)
 }
 
 export async function getAboutPage() {
-  return client.fetch(ABOUT_PAGE_QUERY)
+  return cachedFetch('aboutPage', ABOUT_PAGE_QUERY)
 }
 
 export async function getContactPage() {
-  return client.fetch(CONTACT_PAGE_QUERY)
+  return cachedFetch('contactPage', CONTACT_PAGE_QUERY)
 }
 
 export async function getNavSettings() {
-  return client.fetch(NAV_SETTINGS_QUERY)
+  return cachedFetch('navSettings', NAV_SETTINGS_QUERY)
 }
