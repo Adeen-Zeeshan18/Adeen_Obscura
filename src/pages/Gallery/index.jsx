@@ -86,6 +86,7 @@ export default function Gallery() {
     filterBarRef,
     reducedMotion,
     paused: Boolean(imgPreview),
+    ready: Boolean(collections),
   })
 
   const { handleStageMove, handleStageLeave } = useGalleryStageTilt({

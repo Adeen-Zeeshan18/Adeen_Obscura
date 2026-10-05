@@ -28,7 +28,6 @@ export default function App() {
   const [page, setPage]             = useState(getPageFromHash)
   const [introDone, setIntroDone]   = useState(hasDeepLinkedImage)
   const [curtainKey, setCurtainKey] = useState(0)
-  const openSearchRef  = useRef(null)
   const navigatingRef  = useRef(false)
   // Keep a ref so hashchange handler always reads the latest page without
   // needing to be re-registered on every page change.
@@ -73,16 +72,6 @@ export default function App() {
     return () => window.removeEventListener('hashchange', onHashChange)
   }, [])
 
-  useEffect(() => {
-    const fn = (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault(); openSearchRef.current?.()
-      }
-    }
-    window.addEventListener('keydown', fn)
-    return () => window.removeEventListener('keydown', fn)
-  }, [])
-
   const pages = { home: Home, gallery: Gallery, about: About, contact: Contact }
   const Page  = pages[page] || Home
 
@@ -93,7 +82,7 @@ export default function App() {
       <div className="cursor-ring" />
       {!introDone && <Intro onComplete={handleIntroDone} />}
       <Curtain trigger={curtainKey > 0 ? curtainKey : null} />
-      <Search onNavigate={navigateTo} onOpen={fn => { openSearchRef.current = fn }} />
+      <Search onNavigate={navigateTo} />
       <Nav activePage={page} onNavigate={navigateTo} />
       <div id="main">
         <Suspense fallback={null}>
