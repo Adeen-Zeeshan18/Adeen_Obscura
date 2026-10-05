@@ -10,7 +10,11 @@ export default function Search({ onNavigate }) {
   const [collections, setCollections] = useState([])
   const inputRef = useRef(null)
 
-  useEffect(() => { getCollections().then(setCollections) }, [])
+  useEffect(() => {
+    getCollections()
+      .then(setCollections)
+      .catch((err) => console.error('[Search] Failed to load collections from Sanity', err))
+  }, [])
 
   // Build search index
   const index = useMemo(() => {

@@ -38,7 +38,11 @@ export default function Home({ onNavigate }) {
   const [newsletter, setNewsletter] = useState({ email: '', status: 'idle', error: '' })
   const [collections, setCollections] = useState([])
 
-  useEffect(() => { getCollections().then(setCollections) }, [])
+  useEffect(() => {
+    getCollections()
+      .then(setCollections)
+      .catch((err) => console.error('[Home] Failed to load collections from Sanity', err))
+  }, [])
 
   const {
     exploreSymbolRef,

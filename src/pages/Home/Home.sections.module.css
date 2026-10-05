@@ -98,6 +98,9 @@
 .imgWrap {
   overflow: hidden;
   background: #0d0d0d;
+  /* Reserve the image's own aspect ratio here too, so a missing cover image
+     (no <img> rendered) doesn't collapse this to zero height. */
+  aspect-ratio: 3 / 4;
 }
 
 .imgWrap img {

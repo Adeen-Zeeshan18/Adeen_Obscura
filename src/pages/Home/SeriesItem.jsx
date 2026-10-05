@@ -17,7 +17,7 @@ export default function SeriesItem({ col, index, line, onNavigate }) {
       }}
     >
       <div className={styles.imgWrap}>
-        {col.coverImage && (
+        {col.coverImage?.asset && (
           <img src={urlFor(col.coverImage).width(800).url()} alt={col.title} />
         )}
       </div>
