@@ -6,6 +6,7 @@ export function useGalleryCursorLight({
   filterBarRef,
   reducedMotion,
   paused = false,
+  ready = true,
 }) {
   const cursorRafRef = useRef(0)
   const pendingCursorRef = useRef(null)
@@ -60,5 +61,10 @@ export function useGalleryCursorLight({
       cursorRafRef.current = 0
       hide()
     }
-  }, [reducedMotion, paused, pageRef, filterBarRef])
+    // `ready` isn't read above — it's here so this effect re-runs once the
+    // real page mounts (replacing GallerySkeleton, which has no pageRef),
+    // since pageRef/filterBarRef are stable ref objects that never change on
+    // their own and would otherwise leave this effect's early `!page` return
+    // permanently in effect.
+  }, [reducedMotion, paused, pageRef, filterBarRef, ready])
 }

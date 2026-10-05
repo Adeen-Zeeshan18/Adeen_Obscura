@@ -3,7 +3,7 @@ import Fuse from 'fuse.js'
 import { collections } from '../data/collections'
 import styles from './Search.module.css'
 
-export default function Search({ onNavigate, onOpen }) {
+export default function Search({ onNavigate }) {
   const [open, setOpen]     = useState(false)
   const [query, setQuery]   = useState('')
   const [selected, setSelected] = useState(0)
@@ -80,9 +80,6 @@ export default function Search({ onNavigate, onOpen }) {
     if (open) setTimeout(() => inputRef.current?.focus(), 50)
     else setQuery('')
   }, [open])
-
-  // Expose open function to parent
-  useEffect(() => { onOpen?.(() => setOpen(true)) }, [onOpen])
 
   // Focus trap inside the search dialog
   useEffect(() => {
