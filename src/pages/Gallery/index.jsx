@@ -139,8 +139,13 @@ export default function Gallery() {
     })
   }, [current, filtered, prev, next])
 
-  // Persist selected collection + open image so a refresh restores the same view
+  // Persist selected collection + open image so a refresh restores the same view.
+  // Must wait for the URL-restore effect above to have run first — otherwise
+  // this fires on mount (before `collections`/`restoreFromUrl` ever see the
+  // deep-link params) and overwrites a fresh `?c=&img=` URL with nothing,
+  // destroying the deep link before it can ever be read.
   useEffect(() => {
+    if (!collections || !restoredRef.current) return
     const params = new URLSearchParams()
     if (col?.id) params.set('c', col.id)
     if (imgPreview) params.set('img', String(imgPreview.startIndex ?? 0))
@@ -149,7 +154,7 @@ export default function Gallery() {
     // Chrome throttles rapid history writes, so skip no-op updates
     if (url === `${window.location.pathname}${window.location.search}${window.location.hash}`) return
     window.history.replaceState(null, '', url)
-  }, [col, imgPreview])
+  }, [collections, col, imgPreview])
 
   if (loadError) {
     return (
