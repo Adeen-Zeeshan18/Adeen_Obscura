@@ -26,6 +26,20 @@
 }
 .fieldInput::placeholder { color: var(--white-faint); font-size: 13px; }
 .fieldInput:focus { border-bottom-color: var(--border-hover); }
+
+/* Chrome/Safari paint autofilled inputs with their own opaque background,
+   ignoring `background: none` above — push it back to the page background
+   via the inset-shadow trick (the only thing that overrides it), and keep
+   the text themed instead of defaulting to black-on-white. */
+.fieldInput:-webkit-autofill,
+.fieldInput:-webkit-autofill:hover,
+.fieldInput:-webkit-autofill:focus,
+.fieldInput:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--white);
+  -webkit-box-shadow: 0 0 0 1000px var(--black) inset;
+  box-shadow: 0 0 0 1000px var(--black) inset;
+  transition: background-color 9999s ease-in-out 0s;
+}
 .fieldTextarea { resize: none; line-height: 1.7; }
 .fieldLine {
   position: absolute; bottom: 0; left: 0; width: 0; height: 1px;

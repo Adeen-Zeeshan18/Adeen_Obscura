@@ -1,4 +1,5 @@
 import styles from './Home.sections.module.css'
+import { urlFor } from '../../lib/sanity/image'
 
 export default function SeriesItem({ col, index, line, onNavigate }) {
   const num = String(index + 1).padStart(2, '0')
@@ -16,7 +17,9 @@ export default function SeriesItem({ col, index, line, onNavigate }) {
       }}
     >
       <div className={styles.imgWrap}>
-        <img src={col.coverImage} alt={col.title} />
+        {col.coverImage && (
+          <img src={urlFor(col.coverImage).width(800).url()} alt={col.title} />
+        )}
       </div>
 
       <div className={styles.meta}>
