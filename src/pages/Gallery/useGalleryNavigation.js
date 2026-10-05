@@ -14,8 +14,9 @@ export function useGalleryNavigation({
   const navLockRef = useRef(false)
   const go = useCallback(
     (dir, startX = 0) => {
+      if (total < 1) return // nothing to navigate between
       const el = motionRef.current
-      if (!el || total < 1) {
+      if (!el) {
         setCurrent((c) => (c + dir + total) % total)
         return
       }

@@ -41,11 +41,11 @@ export default function ImgPreview({ collection, startIndex = 0, onClose, series
     onIndexChangeRef.current?.(current)
   }, [current])
 
-  const images = collection.images
+  const images = collection.images || []
   const img = images[current]
   const exif = useMemo(
-    () => ({ ...collection.exif, ...img.exif }),
-    [collection.exif, img.exif],
+    () => ({ ...collection.exif, ...img?.exif }),
+    [collection.exif, img?.exif],
   )
 
   const go = useCallback((dir) => {
@@ -96,6 +96,15 @@ export default function ImgPreview({ collection, startIndex = 0, onClose, series
     el.addEventListener('keydown', onKeyDown)
     return () => el.removeEventListener('keydown', onKeyDown)
   }, [])
+
+  // A collection published with no images has nothing to show here — bounce
+  // back to the gallery instead of rendering (and crashing on) a broken
+  // viewer. The render guard below covers the one frame before this fires.
+  useEffect(() => {
+    if (images.length === 0) onClose()
+  }, [images.length, onClose])
+
+  if (images.length === 0) return null
 
   const seriesNum = String(seriesIndex + 1).padStart(2, '0')
   const archiveNum = String(current + 1).padStart(3, '0')

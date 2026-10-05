@@ -30,6 +30,7 @@ function restoreFromUrl(collections) {
   if (imgParam === null) return { current: idx, imgPreview: null }
 
   const col = collections[idx]
+  if (!col.images?.length) return { current: idx, imgPreview: null }
   const startIndex = Math.max(0, Math.min(Number(imgParam) || 0, col.images.length - 1))
   return { current: idx, imgPreview: { collection: col, startIndex, seriesIndex: idx } }
 }
