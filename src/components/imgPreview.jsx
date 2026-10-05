@@ -240,7 +240,7 @@ export default function ImgPreview({ collection, startIndex = 0, onClose, series
               </section>
             )}
 
-            <section className={styles.block}>
+            <section className={`${styles.block} ${styles.filmstripBlock}`}>
               <header className={styles.blockHead}>
                 <span className={styles.blockNum}>{filmstripNum}</span>
                 <h3 className={styles.blockLabel}>Filmstrip · Series {seriesNum}</h3>

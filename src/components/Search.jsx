@@ -1,13 +1,20 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import Fuse from 'fuse.js'
-import { collections } from '../data/collections'
+import { getCollections } from '../lib/sanity/content'
 import styles from './Search.module.css'
 
 export default function Search({ onNavigate }) {
   const [open, setOpen]     = useState(false)
   const [query, setQuery]   = useState('')
   const [selected, setSelected] = useState(0)
+  const [collections, setCollections] = useState([])
   const inputRef = useRef(null)
+
+  useEffect(() => {
+    getCollections()
+      .then(setCollections)
+      .catch((err) => console.error('[Search] Failed to load collections from Sanity', err))
+  }, [])
 
   // Build search index
   const index = useMemo(() => {
@@ -28,7 +35,7 @@ export default function Search({ onNavigate }) {
       { type: 'page', title: 'Contact',  sub: 'Get in touch',             keywords: 'contact email',       action: () => onNavigate('contact') },
     ]
     return [...items, ...pages]
-  }, [onNavigate])
+  }, [collections, onNavigate])
 
   const fuse = useMemo(() => new Fuse(index, {
     keys: [
